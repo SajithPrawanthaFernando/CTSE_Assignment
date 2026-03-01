@@ -1,7 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/sleepr/apps/reservations/src",
+  "monorepo": true,
+  "root": ".",
+  "sourceRoot": "apps/api-gateway/src",
+  "compilerOptions": {
+    "webpack": true
+  },
   "projects": {
     "common": {
       "type": "library",
@@ -19,15 +24,6 @@
       "sourceRoot": "apps/auth/src",
       "compilerOptions": {
         "tsConfigPath": "apps/auth/tsconfig.app.json"
-      }
-    },
-    "sleepr": {
-      "type": "application",
-      "root": "apps/sleepr",
-      "entryFile": "main",
-      "sourceRoot": "apps/sleepr/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/sleepr/tsconfig.app.json"
       }
     },
     "orders": {
@@ -66,11 +62,5 @@
         "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
       }
     }
-  },
-  "monorepo": true,
-  "root": "apps/quick-bite",
-  "compilerOptions": {
-    "webpack": true,
-    "tsConfigPath": "apps/quick-bite/tsconfig.app.json"
   }
 }
