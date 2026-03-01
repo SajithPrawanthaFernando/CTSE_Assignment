@@ -1,0 +1,53 @@
+name: Build & Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - name: auth
+            dockerfile: apps/auth/Dockerfile
+            appNameSecret: AUTH_APP_NAME
+            imageName: quickbite-auth
+          - name: api-gateway
+            dockerfile: apps/api-gateway/Dockerfile
+            appNameSecret: GATEWAY_APP_NAME
+            imageName: quickbite-api-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set ACR login server
+        id: acr
+        run: |
+          echo "LOGIN_SERVER=$(az acr show -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)" >> $GITHUB_OUTPUT
+
+      - name: Login to ACR
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build and Push Image
+        run: |
+          IMAGE="${{ steps.acr.outputs.LOGIN_SERVER }}/${{ matrix.service.imageName }}:${{ github.sha }}"
+          docker build -f ${{ matrix.service.dockerfile }} -t $IMAGE .
+          docker push $IMAGE
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Deploy to Azure Container App
+        run: |
+          APP_NAME="${{ secrets[matrix.service.appNameSecret] }}"
+          az containerapp update \
+            --name "$APP_NAME" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --image "$IMAGE"
