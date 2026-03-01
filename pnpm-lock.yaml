@@ -162,9 +162,6 @@ importers:
       eslint-plugin-prettier:
         specifier: ^5.0.1
         version: 5.2.6(@types/eslint@9.6.1)(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.5.3)
-      jest:
-        specifier: 29.7.0
-        version: 29.7.0(@types/node@20.17.30)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3))
       prettier:
         specifier: ^3.0.3
         version: 3.5.3
