@@ -37,7 +37,7 @@ jobs:
           pnpm install --frozen-lockfile --offline
 
       - name: Run tests with coverage
-        run: pnpm test -- --coverage
+        run: pnpm exec jest --coverage
 
       - name: SonarCloud scan
         uses: SonarSource/sonarcloud-github-action@v3
