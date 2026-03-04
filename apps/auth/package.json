@@ -21,7 +21,10 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
+    "@types/jest": "^30.0.0",
     "@types/passport-jwt": "^3.0.8",
-    "@types/passport-local": "^1.0.35"
+    "@types/passport-local": "^1.0.35",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6"
   }
 }
