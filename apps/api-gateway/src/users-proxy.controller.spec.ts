@@ -30,6 +30,18 @@ describe('UsersProxyController', () => {
     controller = moduleRef.get(UsersProxyController);
   });
 
+  it('should cover base() and forwardHeaders() defaults', () => {
+    // cover base()
+    expect((controller as any).base()).toBe('http://localhost:3001');
+
+    // cover forwardHeaders() when cookie/authorization are missing
+    const req: any = { headers: {} };
+    expect((controller as any).forwardHeaders(req)).toEqual({
+      cookie: '',
+      authorization: '',
+    });
+  });
+
   it('should proxy create user and forward headers', async () => {
     const mockAxiosResponse = {
       status: 201,
@@ -69,6 +81,32 @@ describe('UsersProxyController', () => {
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({ _id: '1', email: 'x@y.com' });
+  });
+
+  it('should proxy create user with missing headers (defaults)', async () => {
+    const mockAxiosResponse = {
+      status: 201,
+      data: { ok: true },
+      headers: {},
+    };
+    httpService.post.mockReturnValueOnce(of(mockAxiosResponse as any));
+
+    const req: any = { headers: {} }; // no cookie/authorization
+    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.create({ email: 'a@b.com' }, req, res);
+
+    expect(httpService.post).toHaveBeenCalledWith(
+      'http://localhost:3001/users',
+      { email: 'a@b.com' },
+      expect.objectContaining({
+        headers: { cookie: '', authorization: '' },
+        validateStatus: expect.any(Function),
+      }),
+    );
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
   });
 
   it('should proxy get current user', async () => {
