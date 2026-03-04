@@ -6,7 +6,7 @@ import * as cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 import { AuthModule } from './auth.module';
 
-async function bootstrap() {
+export async function bootstrap() {
   const app = await NestFactory.create(AuthModule);
   const configService = app.get(ConfigService);
 
@@ -22,10 +22,18 @@ async function bootstrap() {
       port: configService.get('TCP_PORT'),
     },
   });
+
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useLogger(app.get(Logger));
+
   await app.startAllMicroservices();
   await app.listen(configService.get('HTTP_PORT'));
+
+  return app;
 }
-bootstrap();
+
+// Only run when executed directly (prevents auto-run during unit tests)
+if (require.main === module) {
+  bootstrap();
+}
