@@ -87,6 +87,43 @@ describe('AuthProxyController', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Unauthorized' });
   });
 
+  it('should proxy login with missing cookie header (defaults to empty string)', async () => {
+    const mockAxiosResponse = {
+      status: 200,
+      data: { ok: true },
+      headers: {},
+    };
+
+    httpService.post.mockReturnValueOnce(of(mockAxiosResponse as any));
+
+    const req: any = { headers: {} }; // cookie missing
+    const res: any = {
+      setHeader: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    await controller.login(
+      { email: 'a@b.com', password: 'Qw123456!' },
+      req,
+      res,
+    );
+
+    expect(httpService.post).toHaveBeenCalledWith(
+      'http://localhost:3001/auth/login',
+      { email: 'a@b.com', password: 'Qw123456!' },
+      expect.objectContaining({
+        headers: { cookie: '' }, // default branch covered
+        withCredentials: true,
+        validateStatus: expect.any(Function),
+      }),
+    );
+
+    expect(res.setHeader).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
+  });
+
   it('should proxy logout and forward Set-Cookie', async () => {
     const mockAxiosResponse = {
       status: 200,
@@ -122,6 +159,41 @@ describe('AuthProxyController', () => {
     expect(res.setHeader).toHaveBeenCalledWith('set-cookie', [
       'Authentication=; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
     ]);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Logged out successfully',
+    });
+  });
+
+  it('should proxy logout with missing cookie header (defaults) and no Set-Cookie', async () => {
+    const mockAxiosResponse = {
+      status: 200,
+      data: { message: 'Logged out successfully' },
+      headers: {}, // set-cookie missing branch
+    };
+
+    httpService.post.mockReturnValueOnce(of(mockAxiosResponse as any));
+
+    const req: any = { headers: {} }; // cookie missing branch
+    const res: any = {
+      setHeader: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    await controller.logout(req, res);
+
+    expect(httpService.post).toHaveBeenCalledWith(
+      'http://localhost:3001/auth/logout',
+      {},
+      expect.objectContaining({
+        headers: { cookie: '' }, // default branch covered
+        withCredentials: true,
+        validateStatus: expect.any(Function),
+      }),
+    );
+
+    expect(res.setHeader).not.toHaveBeenCalled(); // set-cookie missing branch covered
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Logged out successfully',
