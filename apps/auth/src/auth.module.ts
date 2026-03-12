@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LocalStategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -24,6 +26,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         TCP_PORT: Joi.number().required(),
       }),
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60 * 1000,
+        limit: 10,
+      },
+    ]),
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
@@ -37,6 +45,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   ],
   exports: [AuthService],
   controllers: [AuthController],
-  providers: [AuthService, LocalStategy, JwtStrategy],
+  providers: [
+    AuthService,
+    LocalStategy,
+    JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AuthModule {}
