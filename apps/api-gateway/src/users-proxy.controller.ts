@@ -12,6 +12,7 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { Request, Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('users')
 export class UsersProxyController {
@@ -28,6 +29,7 @@ export class UsersProxyController {
     };
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post()
   async create(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const response = await lastValueFrom(

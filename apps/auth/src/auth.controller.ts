@@ -5,11 +5,13 @@ import { CurrentUser, UserDocument } from '@app/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60 * 1000 } })
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(
@@ -26,6 +28,7 @@ export class AuthController {
     return data.user;
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60 * 1000 } })
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Res({ passthrough: true }) response: Response) {
