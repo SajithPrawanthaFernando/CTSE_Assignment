@@ -1,25 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from './app.module';
+import { AppModule, GatewayJwtStrategy } from './app.module'; // ← import GatewayJwtStrategy
 import { AuthProxyController } from './auth-proxy.controller';
 import { UsersProxyController } from './users-proxy.controller';
 import { ProductsProxyController } from './products-proxy.controller';
-import { JwtStrategy } from '../../auth/src/strategies/jwt.strategy';
-
-// ← mock the entire jwt strategy file so UsersService is never needed
-jest.mock('../../auth/src/strategies/jwt.strategy', () => ({
-  JwtStrategy: class MockJwtStrategy {
-    validate = jest.fn().mockResolvedValue({ userId: '1' });
-  },
-}));
 
 jest.mock('@nestjs/throttler', () => {
   const originalModule = jest.requireActual('@nestjs/throttler');
   return {
     ...originalModule,
     ThrottlerGuard: class MockThrottlerGuard {
-      canActivate() {
-        return true;
-      }
+      canActivate() { return true; }
     },
   };
 });
@@ -31,7 +21,7 @@ describe('AppModule', () => {
     moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(JwtStrategy)
+      .overrideProvider(GatewayJwtStrategy) // ← override inline strategy
       .useValue({ validate: jest.fn().mockResolvedValue({ userId: '1' }) })
       .compile();
   });

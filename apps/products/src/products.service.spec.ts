@@ -121,23 +121,24 @@ describe('ProductsService', () => {
 
       const result = await service.findAll(query as any);
 
+      // default page=10, limit=50 → skip = (10-1)*50 = 450
       expect(productsRepositoryMock.findWithPagination).toHaveBeenCalledWith(
         {},
         { createdAt: -1 },
-        0,
-        10
+        450,
+        50
       );
       expect(result).toEqual({
         data: mockProducts,
         total: 2,
-        page: 1,
-        limit: 10,
+        page: 10,
+        limit: 50,
         totalPages: 1,
       });
     });
 
     it('should filter food products by Dairy category', async () => {
-      const query = { category: 'Dairy', page: 1, limit: 10 };
+      const query = { category: 'Dairy', page: 1, limit: 50 };
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
         data: [mockProduct],
@@ -150,13 +151,13 @@ describe('ProductsService', () => {
         { category: 'Dairy' },
         { createdAt: -1 },
         0,
-        10
+        50
       );
       expect(result.data).toHaveLength(1);
     });
 
     it('should search food products by keyword "organic"', async () => {
-      const query = { search: 'organic', page: 1, limit: 10 };
+      const query = { search: 'organic', page: 1, limit: 50 };
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
         data: [mockProduct],
@@ -175,13 +176,13 @@ describe('ProductsService', () => {
         }),
         { createdAt: -1 },
         0,
-        10
+        50
       );
       expect(result.data).toHaveLength(1);
     });
 
     it('should filter food products by active status', async () => {
-      const query = { active: false, page: 1, limit: 10 };
+      const query = { active: false, page: 1, limit: 50 };
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
         data: [],
@@ -194,7 +195,7 @@ describe('ProductsService', () => {
         { active: false },
         { createdAt: -1 },
         0,
-        10
+        50
       );
       expect(result.data).toHaveLength(0);
     });
@@ -262,7 +263,6 @@ describe('ProductsService', () => {
     });
 
     it('should filter out invalid IDs and return only valid food products', async () => {
-      // Use a genuinely short invalid ID alongside a valid one
       const ids = [mockProduct._id.toString(), 'abc'];
 
       productsRepositoryMock.findByIds.mockResolvedValueOnce([mockProduct]);
@@ -276,8 +276,6 @@ describe('ProductsService', () => {
     });
 
     it('should return empty array when all IDs are invalid', async () => {
-      // Must be short strings — 'invalid-id-1' is 12 bytes so Mongoose
-      // treats it as a valid ObjectId. Use short strings instead.
       const ids = ['abc', 'xyz'];
 
       const result = await service.findByIds(ids);
