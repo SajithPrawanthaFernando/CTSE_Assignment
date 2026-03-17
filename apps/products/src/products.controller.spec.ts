@@ -1,6 +1,5 @@
 import { Test } from '@nestjs/testing';
 import { Types } from 'mongoose';
-import { ExecutionContext } from '@nestjs/common';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
