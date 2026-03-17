@@ -75,6 +75,7 @@ export class ProductsService {
     const objectIds = ids
       .filter((id) => Types.ObjectId.isValid(id))
       .map((id) => new Types.ObjectId(id));
+      if (!objectIds.length) return []; 
     return this.productsRepository.findByIds(objectIds);
   }
 

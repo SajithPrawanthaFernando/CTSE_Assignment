@@ -34,6 +34,11 @@ describe('AppModule', () => {
     expect(moduleRef).toBeDefined();
   });
 
+  it('should have GatewayJwtStrategy registered', () => {
+    const strategy = moduleRef.get<GatewayJwtStrategy>(GatewayJwtStrategy);
+    expect(strategy).toBeDefined();
+  });
+
   it('should register AuthProxyController', () => {
     const controller = moduleRef.get<AuthProxyController>(AuthProxyController);
     expect(controller).toBeDefined();
@@ -41,9 +46,14 @@ describe('AppModule', () => {
   });
 
   it('should register UsersProxyController', () => {
-    const controller =
-      moduleRef.get<UsersProxyController>(UsersProxyController);
+    const controller = moduleRef.get<UsersProxyController>(UsersProxyController);
     expect(controller).toBeDefined();
     expect(controller).toBeInstanceOf(UsersProxyController);
+  });
+
+  it('should register ProductsProxyController', () => {
+    const controller = moduleRef.get<ProductsProxyController>(ProductsProxyController);
+    expect(controller).toBeDefined();
+    expect(controller).toBeInstanceOf(ProductsProxyController);
   });
 });

@@ -18,12 +18,12 @@ export class QueryProductsDto {
   @Max(100)
   limit?: number = 100;
 
-  @ApiPropertyOptional({ example: 'Electronics' })
+  @ApiPropertyOptional({ example: 'Dairy' })
   @IsOptional()
   @IsString()
   category?: string;
 
-  @ApiPropertyOptional({ example: 'mouse' })
+  @ApiPropertyOptional({ example: 'Cake' })
   @IsOptional()
   @IsString()
   search?: string;
