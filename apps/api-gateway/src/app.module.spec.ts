@@ -2,6 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from './app.module';
 import { AuthProxyController } from './auth-proxy.controller';
 import { UsersProxyController } from './users-proxy.controller';
+import { ProductsProxyController } from './products-proxy.controller';
+import { JwtStrategy } from '../../auth/src/strategies/jwt.strategy';
+
+// ← mock the entire jwt strategy file so UsersService is never needed
+jest.mock('../../auth/src/strategies/jwt.strategy', () => ({
+  JwtStrategy: class MockJwtStrategy {
+    validate = jest.fn().mockResolvedValue({ userId: '1' });
+  },
+}));
 
 jest.mock('@nestjs/throttler', () => {
   const originalModule = jest.requireActual('@nestjs/throttler');
@@ -21,7 +30,14 @@ describe('AppModule', () => {
   beforeEach(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(JwtStrategy)
+      .useValue({ validate: jest.fn().mockResolvedValue({ userId: '1' }) })
+      .compile();
+  });
+
+  afterEach(async () => {
+    await moduleRef.close();
   });
 
   it('should compile the module', () => {
@@ -35,9 +51,14 @@ describe('AppModule', () => {
   });
 
   it('should register UsersProxyController', () => {
-    const controller =
-      moduleRef.get<UsersProxyController>(UsersProxyController);
+    const controller = moduleRef.get<UsersProxyController>(UsersProxyController);
     expect(controller).toBeDefined();
     expect(controller).toBeInstanceOf(UsersProxyController);
+  });
+
+  it('should register ProductsProxyController', () => {
+    const controller = moduleRef.get<ProductsProxyController>(ProductsProxyController);
+    expect(controller).toBeDefined();
+    expect(controller).toBeInstanceOf(ProductsProxyController);
   });
 });
