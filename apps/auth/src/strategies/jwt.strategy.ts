@@ -1,4 +1,4 @@
-// apps/auth/src/strategies/jwt.strategy.ts — DO NOT CHANGE THIS
+// apps/auth/src/strategies/jwt.strategy.ts - RESTORE THIS
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -10,7 +10,7 @@ import { UsersService } from '../users/users.service';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ConfigService,
-    private readonly usersService: UsersService,
+    private readonly usersService: UsersService, // ← MUST have this second arg
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([

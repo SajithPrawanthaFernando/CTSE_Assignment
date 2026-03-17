@@ -34,6 +34,11 @@ describe('AppModule', () => {
     expect(moduleRef).toBeDefined();
   });
 
+  it('should have GatewayJwtStrategy registered', () => {
+    const strategy = moduleRef.get<GatewayJwtStrategy>(GatewayJwtStrategy);
+    expect(strategy).toBeDefined();
+  });
+
   it('should register AuthProxyController', () => {
     const controller = moduleRef.get<AuthProxyController>(AuthProxyController);
     expect(controller).toBeDefined();
