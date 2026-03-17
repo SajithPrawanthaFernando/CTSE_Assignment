@@ -27,7 +27,7 @@ export class ProductsService {
     limit: number;
     totalPages: number;
   }> {
-    const { page = 1, limit = 10, category, search, active, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const { page = 10, limit = 50, category, search, active, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const filter: FilterQuery<ProductDocument> = {};
 
     if (category) filter.category = category;
@@ -75,6 +75,7 @@ export class ProductsService {
     const objectIds = ids
       .filter((id) => Types.ObjectId.isValid(id))
       .map((id) => new Types.ObjectId(id));
+      if (!objectIds.length) return []; 
     return this.productsRepository.findByIds(objectIds);
   }
 

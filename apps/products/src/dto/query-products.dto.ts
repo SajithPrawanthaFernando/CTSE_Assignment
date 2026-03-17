@@ -16,14 +16,14 @@ export class QueryProductsDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 10;
+  limit?: number = 100;
 
-  @ApiPropertyOptional({ example: 'Electronics' })
+  @ApiPropertyOptional({ example: 'Dairy' })
   @IsOptional()
   @IsString()
   category?: string;
 
-  @ApiPropertyOptional({ example: 'mouse' })
+  @ApiPropertyOptional({ example: 'Cake' })
   @IsOptional()
   @IsString()
   search?: string;

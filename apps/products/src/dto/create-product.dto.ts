@@ -27,7 +27,7 @@ export class CreateProductDto {
   @Min(0)
   stock?: number;
 
-  @ApiPropertyOptional({ example: 'Electronics' })
+  @ApiPropertyOptional({ example: 'Dairy' })
   @IsOptional()
   @IsString()
   category?: string;
