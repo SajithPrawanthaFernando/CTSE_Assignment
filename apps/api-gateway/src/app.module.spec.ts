@@ -36,6 +36,11 @@ describe('AppModule', () => {
     expect(moduleRef).toBeDefined();
   });
 
+  it('should have GatewayJwtStrategy registered', () => {
+    const strategy = moduleRef.get<GatewayJwtStrategy>(GatewayJwtStrategy);
+    expect(strategy).toBeDefined();
+  });
+
   it('should register AuthProxyController', () => {
     const controller = moduleRef.get<AuthProxyController>(AuthProxyController);
     expect(controller).toBeDefined();
@@ -52,11 +57,5 @@ describe('AppModule', () => {
     const controller = moduleRef.get<ProductsProxyController>(ProductsProxyController);
     expect(controller).toBeDefined();
     expect(controller).toBeInstanceOf(ProductsProxyController);
-  });
-
-  it('should have GatewayJwtStrategy registered', () => {
-    // ← actually uses GatewayJwtStrategy so ESLint no-unused-vars is satisfied
-    const strategy = moduleRef.get<GatewayJwtStrategy>(GatewayJwtStrategy);
-    expect(strategy).toBeDefined();
   });
 });
