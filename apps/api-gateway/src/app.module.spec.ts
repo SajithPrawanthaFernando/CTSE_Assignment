@@ -3,6 +3,18 @@ import { AppModule } from './app.module';
 import { AuthProxyController } from './auth-proxy.controller';
 import { UsersProxyController } from './users-proxy.controller';
 
+jest.mock('@nestjs/throttler', () => {
+  const originalModule = jest.requireActual('@nestjs/throttler');
+  return {
+    ...originalModule,
+    ThrottlerGuard: class MockThrottlerGuard {
+      canActivate() {
+        return true;
+      }
+    },
+  };
+});
+
 describe('AppModule', () => {
   let moduleRef: TestingModule;
 
