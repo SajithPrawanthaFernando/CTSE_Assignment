@@ -6,9 +6,13 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import * as Joi from 'joi';
 import { OrderDocument, OrderSchema } from './schemas/order.schema';
+import { CartDocument, CartSchema } from './schemas/cart.schema';
 import { OrdersController } from './orders.controller';
+import { CartController } from './cart.controller';
 import { OrdersService } from './orders.service';
+import { CartService } from './cart.service'; 
 import { OrdersRepository } from './orders.repository';
+import { CartRepository } from './cart.repository'; 
 import { HealthModule } from '@app/common';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -39,6 +43,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     MongooseModule.forFeature([
       { name: OrderDocument.name, schema: OrderSchema },
+      { name: CartDocument.name, schema: CartSchema },
     ]),
     HttpModule.register({
       timeout: 5000,
@@ -46,7 +51,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     HealthModule,
   ],
-  controllers: [OrdersController],
-  providers: [OrdersService, OrdersRepository, JwtStrategy], // ← added JwtStrategy
+  controllers: [OrdersController, CartController],
+  providers: [
+    OrdersService, 
+    OrdersRepository, 
+    CartService,
+    CartRepository,
+    JwtStrategy,
+  ], // ← added JwtStrategy
 })
 export class OrdersModule {}
