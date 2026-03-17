@@ -11,16 +11,16 @@ describe('ProductsService', () => {
 
   const mockProduct = {
     _id: new Types.ObjectId(),
-    name: 'Organic Sourdough Bread',
-    description: 'Freshly baked artisan sourdough with a crispy crust',
-    price: 8.99,
+    name: 'Wireless Mouse',
+    description: 'Ergonomic wireless mouse',
+    price: 29.99,
     currency: 'USD',
-    stock: 50,
-    category: 'Bakery',
+    stock: 100,
+    category: 'Electronics',
     active: true,
-    tags: ['bread', 'organic', 'artisan'],
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd',
-    rating: 4.5,
+    tags: ['electronics', 'peripherals'],
+    image: 'https://example.com/mouse.jpg',  // renamed from imageUrl
+    rating: 4.5,                              // added
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -30,11 +30,8 @@ describe('ProductsService', () => {
     {
       ...mockProduct,
       _id: new Types.ObjectId(),
-      name: 'Aged Cheddar Cheese',
-      description: '12-month aged sharp cheddar',
-      price: 14.99,
-      category: 'Dairy',
-      tags: ['cheese', 'dairy', 'aged'],
+      name: 'Mechanical Keyboard',
+      price: 89.99,
     },
   ];
 
@@ -61,10 +58,10 @@ describe('ProductsService', () => {
   });
 
   describe('create', () => {
-    it('should create a food product with default values', async () => {
+    it('should create a product with default values', async () => {
       const createDto: CreateProductDto = {
-        name: 'Organic Sourdough Bread',
-        price: 8.99,
+        name: 'Wireless Mouse',
+        price: 29.99,
       };
 
       const expectedProduct = {
@@ -85,18 +82,18 @@ describe('ProductsService', () => {
       expect(result).toEqual(mockProduct);
     });
 
-    it('should create a food product with all custom values', async () => {
+    it('should create a product with custom values', async () => {
       const createDto: CreateProductDto = {
-        name: 'Cold-Pressed Extra Virgin Olive Oil',
-        description: 'Single-origin Spanish olive oil, first cold press',
-        price: 24.99,
-        currency: 'USD',
-        stock: 200,
-        category: 'Pantry',
+        name: 'Wireless Mouse',
+        description: 'Ergonomic wireless mouse',
+        price: 29.99,
+        currency: 'EUR',
+        stock: 50,
+        category: 'Electronics',
         active: true,
-        tags: ['oil', 'organic', 'pantry', 'vegan'],
-        image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5',
-        rating: 4.8,
+        tags: ['electronics'],
+        image: 'https://example.com/mouse.jpg',  // renamed from imageUrl
+        rating: 4.5,                              // added
       };
 
       productsRepositoryMock.create.mockResolvedValueOnce(mockProduct);
@@ -111,7 +108,7 @@ describe('ProductsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return paginated food products with default values', async () => {
+    it('should return paginated products with default values', async () => {
       const query = {};
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
@@ -136,8 +133,8 @@ describe('ProductsService', () => {
       });
     });
 
-    it('should filter food products by Dairy category', async () => {
-      const query = { category: 'Dairy', page: 1, limit: 10 };
+    it('should filter products by category', async () => {
+      const query = { category: 'Electronics', page: 1, limit: 10 };
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
         data: [mockProduct],
@@ -147,7 +144,7 @@ describe('ProductsService', () => {
       const result = await service.findAll(query as any);
 
       expect(productsRepositoryMock.findWithPagination).toHaveBeenCalledWith(
-        { category: 'Dairy' },
+        { category: 'Electronics' },
         { createdAt: -1 },
         0,
         10
@@ -155,8 +152,8 @@ describe('ProductsService', () => {
       expect(result.data).toHaveLength(1);
     });
 
-    it('should search food products by keyword "organic"', async () => {
-      const query = { search: 'organic', page: 1, limit: 10 };
+    it('should search products by name and description', async () => {
+      const query = { search: 'mouse', page: 1, limit: 10 };
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
         data: [mockProduct],
@@ -180,7 +177,7 @@ describe('ProductsService', () => {
       expect(result.data).toHaveLength(1);
     });
 
-    it('should filter food products by active status', async () => {
+    it('should filter by active status', async () => {
       const query = { active: false, page: 1, limit: 10 };
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
@@ -199,7 +196,7 @@ describe('ProductsService', () => {
       expect(result.data).toHaveLength(0);
     });
 
-    it('should calculate total pages correctly for food catalog', async () => {
+    it('should calculate total pages correctly', async () => {
       const query = { page: 1, limit: 5 };
 
       productsRepositoryMock.findWithPagination.mockResolvedValueOnce({
@@ -214,7 +211,7 @@ describe('ProductsService', () => {
   });
 
   describe('findOne', () => {
-    it('should find a food product by valid ID', async () => {
+    it('should find a product by valid ID', async () => {
       const productId = mockProduct._id.toString();
 
       productsRepositoryMock.findOne.mockResolvedValueOnce(mockProduct);
@@ -227,7 +224,7 @@ describe('ProductsService', () => {
       expect(result).toEqual(mockProduct);
     });
 
-    it('should throw BadRequestException for invalid food product ID', async () => {
+    it('should throw BadRequestException for invalid ID', async () => {
       const invalidId = 'invalid-id';
 
       await expect(service.findOne(invalidId)).rejects.toThrow(
@@ -238,7 +235,7 @@ describe('ProductsService', () => {
   });
 
   describe('findByIds', () => {
-    it('should return multiple food products by valid IDs', async () => {
+    it('should return multiple products by valid IDs', async () => {
       const ids = [mockProduct._id.toString(), mockProducts[1]._id.toString()];
 
       productsRepositoryMock.findByIds.mockResolvedValueOnce(mockProducts);
@@ -261,9 +258,8 @@ describe('ProductsService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should filter out invalid IDs and return only valid food products', async () => {
-      // Use a genuinely short invalid ID alongside a valid one
-      const ids = [mockProduct._id.toString(), 'abc'];
+    it('should filter out invalid IDs and return valid products', async () => {
+      const ids = [mockProduct._id.toString(), 'invalid-id'];
 
       productsRepositoryMock.findByIds.mockResolvedValueOnce([mockProduct]);
 
@@ -276,9 +272,7 @@ describe('ProductsService', () => {
     });
 
     it('should return empty array when all IDs are invalid', async () => {
-      // Must be short strings — 'invalid-id-1' is 12 bytes so Mongoose
-      // treats it as a valid ObjectId. Use short strings instead.
-      const ids = ['abc', 'xyz'];
+      const ids = ['invalid-id-1', 'invalid-id-2'];
 
       const result = await service.findByIds(ids);
 
@@ -288,10 +282,10 @@ describe('ProductsService', () => {
   });
 
   describe('update', () => {
-    it('should update a food product price', async () => {
+    it('should update a product with valid ID', async () => {
       const productId = mockProduct._id.toString();
-      const updateDto: UpdateProductDto = { price: 9.99 };
-      const updatedProduct = { ...mockProduct, price: 9.99 };
+      const updateDto: UpdateProductDto = { price: 39.99 };
+      const updatedProduct = { ...mockProduct, ...updateDto };
 
       productsRepositoryMock.findOneAndUpdate.mockResolvedValueOnce(
         updatedProduct
@@ -306,9 +300,9 @@ describe('ProductsService', () => {
       expect(result).toEqual(updatedProduct);
     });
 
-    it('should throw BadRequestException for invalid food product ID', async () => {
+    it('should throw BadRequestException for invalid ID', async () => {
       const invalidId = 'invalid-id';
-      const updateDto: UpdateProductDto = { price: 9.99 };
+      const updateDto: UpdateProductDto = { price: 39.99 };
 
       await expect(service.update(invalidId, updateDto)).rejects.toThrow(
         BadRequestException
@@ -316,23 +310,23 @@ describe('ProductsService', () => {
       expect(productsRepositoryMock.findOneAndUpdate).not.toHaveBeenCalled();
     });
 
-    it('should handle partial food product updates', async () => {
+    it('should handle partial updates', async () => {
       const productId = mockProduct._id.toString();
-      const updateDto: UpdateProductDto = { stock: 200 };
+      const updateDto: UpdateProductDto = { stock: 50 };
 
       productsRepositoryMock.findOneAndUpdate.mockResolvedValueOnce({
         ...mockProduct,
-        stock: 200,
+        stock: 50,
       });
 
       const result = await service.update(productId, updateDto);
 
-      expect(result.stock).toBe(200);
+      expect(result.stock).toBe(50);
     });
   });
 
   describe('remove', () => {
-    it('should remove a discontinued food product', async () => {
+    it('should delete a product with valid ID', async () => {
       const productId = mockProduct._id.toString();
 
       productsRepositoryMock.findOneAndDelete.mockResolvedValueOnce(
@@ -346,7 +340,7 @@ describe('ProductsService', () => {
       });
     });
 
-    it('should throw BadRequestException for invalid food product ID', async () => {
+    it('should throw BadRequestException for invalid ID', async () => {
       const invalidId = 'invalid-id';
 
       await expect(service.remove(invalidId)).rejects.toThrow(
