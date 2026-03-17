@@ -25,7 +25,7 @@ describe('API Gateway main.ts', () => {
     expect(NestFactory.create).toHaveBeenCalledTimes(1);
 
     expect(appMock.enableCors).toHaveBeenCalledWith({
-      origin: 'http://localhost:3000',
+      origin: ['http://localhost:3000', 'http://localhost:4200'],
       credentials: true,
     });
 

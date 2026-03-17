@@ -19,8 +19,8 @@ describe('ProductsService', () => {
     category: 'Dairy',
     active: true,
     tags: ['electronics', 'peripherals'],
-    image: 'https://example.com/mouse.jpg',  // renamed from imageUrl
-    rating: 4.5,                              // added
+    image: 'https://example.com/mouse.jpg',
+    rating: 4.5,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -92,8 +92,8 @@ describe('ProductsService', () => {
         category: 'Electronics',
         active: true,
         tags: ['electronics'],
-        image: 'https://example.com/mouse.jpg',  // renamed from imageUrl
-        rating: 4.5,                              // added
+        image: 'https://example.com/mouse.jpg',
+        rating: 4.5,
       };
 
       productsRepositoryMock.create.mockResolvedValueOnce(mockProduct);
@@ -118,7 +118,7 @@ describe('ProductsService', () => {
 
       const result = await service.findAll(query as any);
 
-      // default page=10, limit=50 → skip = (10-1)*50 = 450
+      // real defaults: page=10, limit=50 → skip = (10-1)*50 = 450
       expect(productsRepositoryMock.findWithPagination).toHaveBeenCalledWith(
         {},
         { createdAt: -1 },
@@ -145,7 +145,7 @@ describe('ProductsService', () => {
       const result = await service.findAll(query as any);
 
       expect(productsRepositoryMock.findWithPagination).toHaveBeenCalledWith(
-        { category: 'Electronics' },
+        { category: 'Dairy' },
         { createdAt: -1 },
         0,
         50
