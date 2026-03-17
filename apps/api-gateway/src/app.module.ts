@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { UsersProxyController } from './users-proxy.controller';
 import { AuthProxyController } from './auth-proxy.controller';
+import { OrdersProxyController } from './orders-proxy.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
@@ -20,7 +21,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
       },
     ]),
   ],
-  controllers: [AuthProxyController, UsersProxyController],
+  controllers: [AuthProxyController, UsersProxyController, OrdersProxyController],
   providers: [
     {
       provide: APP_GUARD,

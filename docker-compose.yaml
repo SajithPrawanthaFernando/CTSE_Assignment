@@ -7,10 +7,14 @@ services:
     command: pnpm run start:dev api-gateway
     env_file:
       - ./apps/api-gateway/.env
+    environment:
+      - AUTH_HTTP_BASEURL=http://auth:3001
+      - ORDERS_HTTP_BASEURL=http://orders:3003
     ports:
       - '3000:3000'
     depends_on:
       - auth
+      - orders
     volumes:
       - .:/usr/src/app
 
@@ -27,8 +31,39 @@ services:
     volumes:
       - .:/usr/src/app
 
+  products:
+    build:
+      context: .
+      dockerfile: ./apps/products/Dockerfile
+      target: development
+    command: pnpm run start:dev products
+    ports:
+      - '3002:3002'
+    volumes:
+      - .:/usr/src/app
+
+  orders:
+    build:
+      context: .
+      dockerfile: ./apps/orders/Dockerfile
+      target: development
+    command: pnpm run start:dev orders
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/orders
+      - HTTP_PORT=3003
+      - PRODUCTS_HTTP_BASEURL=http://products:3002
+    ports:
+      - '3003:3003'
+    depends_on:
+      - mongo
+      - products
+    volumes:
+      - .:/usr/src/app
+
   mongo:
     image: mongo
+    ports:
+      - '27017:27017'
 
   # mongodb:
   #   image: mongodb
