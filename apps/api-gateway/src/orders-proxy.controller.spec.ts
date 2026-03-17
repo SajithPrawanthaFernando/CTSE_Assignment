@@ -19,7 +19,6 @@ describe('OrdersProxyController', () => {
     shippingAddress: '123 Main St, City',
   };
 
-  // ← Mock request object with JWT token
   const mockReq = {
     headers: {
       authorization: 'Bearer mock_token',
@@ -27,14 +26,12 @@ describe('OrdersProxyController', () => {
     },
   } as any;
 
-  // ← Mock response object
   const mockRes = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
   } as any;
 
   beforeEach(async () => {
-    // ← Set env variable for base URL
     process.env.ORDERS_HTTP_BASEURL = 'http://localhost:3003';
 
     const module: TestingModule = await Test.createTestingModule({
@@ -55,7 +52,6 @@ describe('OrdersProxyController', () => {
     controller = module.get<OrdersProxyController>(OrdersProxyController);
     httpService = module.get<HttpService>(HttpService);
 
-    // ← Reset mock response before each test
     jest.clearAllMocks();
     mockRes.status = jest.fn().mockReturnThis();
     mockRes.json = jest.fn().mockReturnThis();
@@ -117,7 +113,7 @@ describe('OrdersProxyController', () => {
         'http://localhost:3003/orders/my-orders',
         expect.objectContaining({
           headers: expect.objectContaining({
-            authorization: 'Bearer mock_token', // ← JWT token forwarded
+            authorization: 'Bearer mock_token',
           }),
         }),
       );
@@ -167,6 +163,71 @@ describe('OrdersProxyController', () => {
       await controller.findOne('nonexistent_id', mockReq, mockRes);
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  // ← NEW: update tests
+  describe('update', () => {
+    it('should forward PATCH /:id request to orders service', async () => {
+      const updatedOrder = {
+        ...mockOrder,
+        items: [
+          { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
+          { productId: 'prod_003', quantity: 2, unitPrice: 12.99, subtotal: 25.98 },
+        ],
+        totalAmount: 70.93,
+        shippingAddress: '456 New St, City',
+      };
+
+      const body = {
+        items: [
+          { productId: 'prod_001', quantity: 5 },
+          { productId: 'prod_003', quantity: 2 },
+          { productId: 'prod_005', quantity: 0 },
+        ],
+        shippingAddress: '456 New St, City',
+      };
+
+      jest.spyOn(httpService, 'patch').mockReturnValue(
+        of({ data: updatedOrder, status: 200, headers: {}, config: {} as any, statusText: 'OK' }),
+      );
+
+      await controller.update(mockOrder._id, body, mockReq, mockRes);
+
+      expect(httpService.patch).toHaveBeenCalledWith(
+        `http://localhost:3003/orders/${mockOrder._id}`,
+        body,
+        expect.any(Object),
+      );
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith(updatedOrder);
+    });
+
+    it('should return 400 when order is not PENDING', async () => {
+      jest.spyOn(httpService, 'patch').mockReturnValue(
+        of({
+          data: { message: 'Cannot update order with status: CONFIRMED. Only PENDING orders can be updated.' },
+          status: 400,
+          headers: {},
+          config: {} as any,
+          statusText: 'Bad Request',
+        }),
+      );
+
+      await controller.update(mockOrder._id, {}, mockReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should return 401 when no token provided', async () => {
+      jest.spyOn(httpService, 'patch').mockReturnValue(
+        of({ data: { message: 'Unauthorized' }, status: 401, headers: {}, config: {} as any, statusText: 'Unauthorized' }),
+      );
+
+      const noAuthReq = { headers: { authorization: '', cookie: '' } } as any;
+      await controller.update(mockOrder._id, {}, noAuthReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(401);
     });
   });
 

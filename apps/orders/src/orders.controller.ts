@@ -14,6 +14,7 @@ import {
 import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
@@ -42,13 +43,12 @@ export class OrdersController {
     return this.ordersService.findAll();
   }
 
-  // ← NEW: Get my orders from JWT token (secure)
   @Get('my-orders')
   @ApiOperation({ summary: 'Get my orders (extracted from JWT token)' })
   @ApiResponse({ status: 200, description: 'List of orders for logged in user.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   getMyOrders(@Request() req) {
-    const userId = req.user?.userId || req.user?.sub; // ← from token, not URL
+    const userId = req.user?.userId || req.user?.sub;
     return this.ordersService.findByUserId(userId);
   }
 
@@ -70,6 +70,20 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
 
+  // ← NEW: Update order items and/or shipping address
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update order items or shipping address (PENDING orders only)' })
+  @ApiResponse({ status: 200, description: 'Order updated.' })
+  @ApiResponse({ status: 400, description: 'Cannot update non-PENDING order.' })
+  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  update(
+    @Param('id') id: string,
+    @Body() updateOrderDto: UpdateOrderDto,
+  ) {
+    return this.ordersService.update(id, updateOrderDto);
+  }
+
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update order status' })
   @ApiResponse({ status: 200, description: 'Order status updated.' })
@@ -82,7 +96,6 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, updateOrderStatusDto);
   }
 
-  // ← NEW: Delete order
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an order' })

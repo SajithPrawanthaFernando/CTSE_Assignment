@@ -3,6 +3,7 @@ import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { OrderStatus } from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 describe('OrdersController', () => {
@@ -19,7 +20,6 @@ describe('OrdersController', () => {
     totalAmount: 17.98,
   };
 
-  // ← mock request object with JWT user
   const mockRequest = {
     user: {
       userId: 'user_123',
@@ -38,11 +38,18 @@ describe('OrdersController', () => {
             findAll: jest.fn().mockResolvedValue([mockOrder]),
             findOne: jest.fn().mockResolvedValue(mockOrder),
             findByUserId: jest.fn().mockResolvedValue([mockOrder]),
+            update: jest.fn().mockResolvedValue({         // ← NEW
+              ...mockOrder,
+              items: [
+                { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
+              ],
+              totalAmount: 44.95,
+            }),
             updateStatus: jest.fn().mockResolvedValue({
               ...mockOrder,
               status: OrderStatus.CONFIRMED,
             }),
-            remove: jest.fn().mockResolvedValue(undefined), // ← NEW
+            remove: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -77,12 +84,11 @@ describe('OrdersController', () => {
     });
   });
 
-  // ← NEW: getMyOrders test
   describe('getMyOrders', () => {
     it('should return orders for logged in user from JWT token', async () => {
       const result = await controller.getMyOrders(mockRequest as any);
       expect(result).toEqual([mockOrder]);
-      expect(service.findByUserId).toHaveBeenCalledWith('user_123'); // ← userId from token
+      expect(service.findByUserId).toHaveBeenCalledWith('user_123');
     });
 
     it('should use sub if userId not present in token', async () => {
@@ -107,6 +113,51 @@ describe('OrdersController', () => {
     });
   });
 
+  // ← NEW: update tests
+  describe('update', () => {
+    it('should update order items', async () => {
+      const dto: UpdateOrderDto = {
+        items: [{ productId: 'prod_001', quantity: 5 }],
+      };
+      const result = await controller.update(mockOrder._id, dto);
+      expect(result).toEqual({
+        ...mockOrder,
+        items: [
+          { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
+        ],
+        totalAmount: 44.95,
+      });
+      expect(service.update).toHaveBeenCalledWith(mockOrder._id, dto);
+    });
+
+    it('should update shipping address', async () => {
+      const dto: UpdateOrderDto = {
+        shippingAddress: '456 New St, City',
+      };
+      await controller.update(mockOrder._id, dto);
+      expect(service.update).toHaveBeenCalledWith(mockOrder._id, dto);
+    });
+
+    it('should update both items and shipping address', async () => {
+      const dto: UpdateOrderDto = {
+        items: [
+          { productId: 'prod_001', quantity: 5 },
+          { productId: 'prod_003', quantity: 2 },
+          { productId: 'prod_005', quantity: 0 }, // ← remove item
+        ],
+        shippingAddress: '456 New St, City',
+      };
+      await controller.update(mockOrder._id, dto);
+      expect(service.update).toHaveBeenCalledWith(mockOrder._id, dto);
+    });
+
+    it('should call update with correct order id', async () => {
+      const dto: UpdateOrderDto = { items: [] };
+      await controller.update(mockOrder._id, dto);
+      expect(service.update).toHaveBeenCalledWith(mockOrder._id, dto);
+    });
+  });
+
   describe('updateStatus', () => {
     it('should update order status', async () => {
       const dto: UpdateOrderStatusDto = { status: OrderStatus.CONFIRMED };
@@ -116,7 +167,6 @@ describe('OrdersController', () => {
     });
   });
 
-  // ← NEW: remove test
   describe('remove', () => {
     it('should delete an order', async () => {
       const result = await controller.remove(mockOrder._id);

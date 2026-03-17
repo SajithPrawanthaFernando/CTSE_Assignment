@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { of } from 'rxjs';
 import { OrdersService } from './orders.service';
 import { OrdersRepository } from './orders.repository';
 import { OrderStatus } from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 describe('OrdersService', () => {
@@ -39,7 +40,7 @@ describe('OrdersService', () => {
               ...mockOrder,
               status: OrderStatus.CONFIRMED,
             }),
-            deleteById: jest.fn().mockResolvedValue(undefined), // ← NEW
+            deleteById: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
@@ -124,7 +125,111 @@ describe('OrdersService', () => {
     });
   });
 
-  // ← NEW: remove tests
+  // ← NEW: update tests
+  describe('update', () => {
+    it('should update item quantity successfully', async () => {
+      const updatedOrder = {
+        ...mockOrder,
+        items: [
+          { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
+        ],
+        totalAmount: 44.95,
+      };
+      jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(updatedOrder as any);
+
+      const dto: UpdateOrderDto = {
+        items: [{ productId: 'prod_001', quantity: 5 }],
+      };
+      const result = await service.update(mockOrder._id, dto);
+      expect(result.totalAmount).toBe(44.95);
+      expect(repository.findOneAndUpdate).toHaveBeenCalled();
+    });
+
+    it('should add new item to order', async () => {
+      const updatedOrder = {
+        ...mockOrder,
+        items: [
+          { productId: 'prod_001', quantity: 2, unitPrice: 8.99, subtotal: 17.98 },
+          { productId: 'prod_003', quantity: 1, unitPrice: 8.99, subtotal: 8.99 },
+        ],
+        totalAmount: 26.97,
+      };
+      jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(updatedOrder as any);
+
+      const dto: UpdateOrderDto = {
+        items: [{ productId: 'prod_003', quantity: 1 }], // ← new item
+      };
+      const result = await service.update(mockOrder._id, dto);
+      expect(result.items.length).toBe(2);
+      expect(repository.findOneAndUpdate).toHaveBeenCalled();
+    });
+
+    it('should remove item when quantity is 0', async () => {
+      const updatedOrder = {
+        ...mockOrder,
+        items: [], // ← item removed
+        totalAmount: 0,
+      };
+      jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(updatedOrder as any);
+
+      const dto: UpdateOrderDto = {
+        items: [{ productId: 'prod_001', quantity: 0 }], // ← quantity 0 = remove
+      };
+      const result = await service.update(mockOrder._id, dto);
+      expect(result.items.length).toBe(0);
+      expect(repository.findOneAndUpdate).toHaveBeenCalled();
+    });
+
+    it('should update shipping address', async () => {
+      const updatedOrder = {
+        ...mockOrder,
+        shippingAddress: '456 New St, City',
+      };
+      jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(updatedOrder as any);
+
+      const dto: UpdateOrderDto = {
+        shippingAddress: '456 New St, City',
+      };
+      const result = await service.update(mockOrder._id, dto);
+      expect(result.shippingAddress).toBe('456 New St, City');
+      expect(repository.findOneAndUpdate).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for non-PENDING order', async () => {
+      // ← Mock a CONFIRMED order
+      jest.spyOn(repository, 'findOne').mockResolvedValue({
+        ...mockOrder,
+        status: OrderStatus.CONFIRMED,
+      } as any);
+
+      const dto: UpdateOrderDto = {
+        items: [{ productId: 'prod_001', quantity: 5 }],
+      };
+
+      await expect(service.update(mockOrder._id, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update(mockOrder._id, dto)).rejects.toThrow(
+        'Cannot update order with status: CONFIRMED',
+      );
+    });
+
+    it('should throw BadRequestException for SHIPPED order', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue({
+        ...mockOrder,
+        status: OrderStatus.SHIPPED,
+      } as any);
+
+      const dto: UpdateOrderDto = {
+        items: [{ productId: 'prod_001', quantity: 5 }],
+      };
+
+      await expect(service.update(mockOrder._id, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   describe('remove', () => {
     it('should delete an order successfully', async () => {
       await service.remove(mockOrder._id);

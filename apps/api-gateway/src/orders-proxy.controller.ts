@@ -58,12 +58,11 @@ export class OrdersProxyController {
     return res.status(response.status).json(response.data);
   }
 
-  // ← NEW: Get my orders (secure - userId from JWT token)
   @Get('my-orders')
   async getMyOrders(@Req() req: Request, @Res() res: Response) {
     const response = await lastValueFrom(
       this.http.get(`${this.base()}/orders/my-orders`, {
-        headers: this.forwardHeaders(req), // ← forwards JWT token
+        headers: this.forwardHeaders(req),
         validateStatus: () => true,
       }),
     );
@@ -100,6 +99,23 @@ export class OrdersProxyController {
     return res.status(response.status).json(response.data);
   }
 
+  // ← NEW: Update order items and/or shipping address
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const response = await lastValueFrom(
+      this.http.patch(`${this.base()}/orders/${id}`, body, {
+        headers: this.forwardHeaders(req),
+        validateStatus: () => true,
+      }),
+    );
+    return res.status(response.status).json(response.data);
+  }
+
   @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
@@ -116,7 +132,6 @@ export class OrdersProxyController {
     return res.status(response.status).json(response.data);
   }
 
-  // ← NEW: Delete order
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(

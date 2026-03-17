@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { OrderDocument, OrderStatus } from './schemas/order.schema';
 import { OrdersRepository } from './orders.repository';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 export interface ProductInfo {
@@ -91,10 +92,75 @@ export class OrdersService {
     );
   }
 
-  // ← NEW: Delete order (uses deleteById from repository)
+  // ← NEW: Update order items and/or shipping address
+  async update(id: string, updateOrderDto: UpdateOrderDto): Promise<OrderDocument> {
+    // Step 1 — Get existing order
+    const existingOrder = await this.ordersRepository.findOne({ _id: id } as any);
+
+    // Step 2 — Only allow updates on PENDING orders
+    if (existingOrder.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Cannot update order with status: ${existingOrder.status}. Only PENDING orders can be updated.`,
+      );
+    }
+
+    // Step 3 — Process item updates if provided
+    let itemsWithPrice = [...existingOrder.items];
+    let totalAmount = existingOrder.totalAmount;
+
+    if (updateOrderDto.items && updateOrderDto.items.length > 0) {
+      for (const updatedItem of updateOrderDto.items) {
+        const existingItemIndex = itemsWithPrice.findIndex(
+          (i) => i.productId === updatedItem.productId,
+        );
+
+        if (updatedItem.quantity === 0) {
+          // ← Remove item if quantity is 0
+          if (existingItemIndex !== -1) {
+            itemsWithPrice.splice(existingItemIndex, 1);
+          }
+        } else if (existingItemIndex !== -1) {
+          // ← Update quantity of existing item
+          const product = await this.getProductInfo(updatedItem.productId);
+          itemsWithPrice[existingItemIndex] = {
+            productId: updatedItem.productId,
+            quantity: updatedItem.quantity,
+            unitPrice: product.price,
+            subtotal: product.price * updatedItem.quantity,
+          };
+        } else {
+          // ← Add new item
+          const product = await this.getProductInfo(updatedItem.productId);
+          itemsWithPrice.push({
+            productId: updatedItem.productId,
+            quantity: updatedItem.quantity,
+            unitPrice: product.price,
+            subtotal: product.price * updatedItem.quantity,
+          });
+        }
+      }
+
+      // Recalculate total amount
+      totalAmount = itemsWithPrice.reduce((sum, item) => sum + item.subtotal, 0);
+    }
+
+    // Step 4 — Save updated order
+    return this.ordersRepository.findOneAndUpdate(
+      { _id: id } as any,
+      {
+        $set: {
+          items: itemsWithPrice,
+          totalAmount,
+          ...(updateOrderDto.shippingAddress && {
+            shippingAddress: updateOrderDto.shippingAddress,
+          }),
+        },
+      } as any,
+    );
+  }
+
+  // ← Delete order
   async remove(id: string): Promise<void> {
     await this.ordersRepository.deleteById(id);
-    // AbstractRepository's findOneAndDelete already throws
-    // NotFoundException automatically if order not found
   }
 }
