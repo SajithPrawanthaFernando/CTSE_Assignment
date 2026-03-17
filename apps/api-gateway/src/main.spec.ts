@@ -25,12 +25,12 @@ describe('API Gateway main.ts', () => {
     expect(NestFactory.create).toHaveBeenCalledTimes(1);
 
     expect(appMock.enableCors).toHaveBeenCalledWith({
-      origin: 'http://localhost:4200',
+      origin: 'http://localhost:3000',
       credentials: true,
     });
 
     expect(appMock.use).toHaveBeenCalledTimes(1);
-    expect(appMock.listen).toHaveBeenCalledWith(3000, '0.0.0.0');
+    expect(appMock.listen).toHaveBeenCalledWith(3009, '0.0.0.0');
     expect(app).toBe(appMock);
   });
 
