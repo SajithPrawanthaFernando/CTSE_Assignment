@@ -25,12 +25,12 @@ describe('API Gateway main.ts', () => {
     expect(NestFactory.create).toHaveBeenCalledTimes(1);
 
     expect(appMock.enableCors).toHaveBeenCalledWith({
-      origin: 'http://localhost:3000',
+      origin: ['http://localhost:3000', 'http://localhost:4200'],
       credentials: true,
     });
 
     expect(appMock.use).toHaveBeenCalledTimes(1);
-    expect(appMock.listen).toHaveBeenCalledWith(3009, '0.0.0.0');
+    expect(appMock.listen).toHaveBeenCalledWith(3009, '0.0.0.0'); // ← number not string
     expect(app).toBe(appMock);
   });
 
@@ -47,6 +47,6 @@ describe('API Gateway main.ts', () => {
 
     await bootstrap();
 
-    expect(appMock.listen).toHaveBeenCalledWith('4000', '0.0.0.0');
+    expect(appMock.listen).toHaveBeenCalledWith('4000', '0.0.0.0'); // ← string because it comes from process.env
   });
 });
