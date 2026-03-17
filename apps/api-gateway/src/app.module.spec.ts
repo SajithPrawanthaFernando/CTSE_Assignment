@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule, GatewayJwtStrategy } from './app.module';
+import { AppModule, GatewayJwtStrategy } from './app.module'; // ← import GatewayJwtStrategy
 import { AuthProxyController } from './auth-proxy.controller';
 import { UsersProxyController } from './users-proxy.controller';
 import { ProductsProxyController } from './products-proxy.controller';
@@ -9,9 +9,7 @@ jest.mock('@nestjs/throttler', () => {
   return {
     ...originalModule,
     ThrottlerGuard: class MockThrottlerGuard {
-      canActivate() {
-        return true;
-      }
+      canActivate() { return true; }
     },
   };
 });
@@ -23,7 +21,7 @@ describe('AppModule', () => {
     moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(GatewayJwtStrategy)
+      .overrideProvider(GatewayJwtStrategy) // ← override inline strategy
       .useValue({ validate: jest.fn().mockResolvedValue({ userId: '1' }) })
       .compile();
   });
