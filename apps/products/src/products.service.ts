@@ -70,26 +70,13 @@ export class ProductsService {
    * Integration endpoint: used by Orders service to fetch multiple products by IDs.
    * Enables inter-service communication for the assignment demonstration.
    */
-  // apps/products/src/products.service.ts
-async findByIds(ids: string[]): Promise<ProductDocument[]> {
-  if (!ids?.length) return [];
-  
-  const objectIds = ids
-    .filter((id) => Types.ObjectId.isValid(id))
-    .map((id) => new Types.ObjectId(id));
-
-  // ← add this early return — prevents calling findByIds with empty array
-  if (!objectIds.length) return [];
-
-  return this.productsRepository.findByIds(objectIds);
-}
-  // async findByIds(ids: string[]): Promise<ProductDocument[]> {
-  //   if (!ids?.length) return [];
-  //   const objectIds = ids
-  //     .filter((id) => Types.ObjectId.isValid(id))
-  //     .map((id) => new Types.ObjectId(id));
-  //   return this.productsRepository.findByIds(objectIds);
-  // }
+  async findByIds(ids: string[]): Promise<ProductDocument[]> {
+    if (!ids?.length) return [];
+    const objectIds = ids
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+    return this.productsRepository.findByIds(objectIds);
+  }
 
   async update(id: string, updateProductDto: UpdateProductDto): Promise<ProductDocument> {
     if (!Types.ObjectId.isValid(id)) {
