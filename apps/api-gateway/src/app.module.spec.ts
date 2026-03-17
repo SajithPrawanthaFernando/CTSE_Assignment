@@ -24,6 +24,18 @@ jest.mock('@nestjs/throttler', () => {
   };
 });
 
+jest.mock('@nestjs/throttler', () => {
+  const originalModule = jest.requireActual('@nestjs/throttler');
+  return {
+    ...originalModule,
+    ThrottlerGuard: class MockThrottlerGuard {
+      canActivate() {
+        return true;
+      }
+    },
+  };
+});
+
 describe('AppModule', () => {
   let moduleRef: TestingModule;
 
