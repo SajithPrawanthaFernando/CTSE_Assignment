@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import { NotFoundException } from '@nestjs/common';
 import { of } from 'rxjs';
 import { OrdersService } from './orders.service';
 import { OrdersRepository } from './orders.repository';
@@ -38,6 +39,7 @@ describe('OrdersService', () => {
               ...mockOrder,
               status: OrderStatus.CONFIRMED,
             }),
+            deleteById: jest.fn().mockResolvedValue(undefined), // ← NEW
           },
         },
         {
@@ -71,16 +73,24 @@ describe('OrdersService', () => {
   describe('create', () => {
     it('should call Products service and create order', async () => {
       const dto: CreateOrderDto = {
-        items: [{ productId: 'prod_001', quantity: 2 }], // ← removed userId
+        items: [{ productId: 'prod_001', quantity: 2 }],
       };
-      const userId = 'user_123'; // ← userId now separate
-      const result = await service.create(dto, userId); // ← pass userId separately
+      const userId = 'user_123';
+      const result = await service.create(dto, userId);
       expect(result).toEqual(mockOrder);
       expect(httpService.get).toHaveBeenCalledWith(
         'http://products:3002/products/prod_001',
         expect.any(Object),
       );
       expect(repository.create).toHaveBeenCalled();
+    });
+
+    it('should calculate total amount correctly', async () => {
+      const dto: CreateOrderDto = {
+        items: [{ productId: 'prod_001', quantity: 2 }], // 2 × 8.99 = 17.98
+      };
+      const result = await service.create(dto, 'user_123');
+      expect(result.totalAmount).toBe(17.98);
     });
   });
 
@@ -111,6 +121,30 @@ describe('OrdersService', () => {
       const result = await service.updateStatus(mockOrder._id, dto);
       expect(result.status).toBe(OrderStatus.CONFIRMED);
       expect(repository.findOneAndUpdate).toHaveBeenCalled();
+    });
+  });
+
+  // ← NEW: remove tests
+  describe('remove', () => {
+    it('should delete an order successfully', async () => {
+      await service.remove(mockOrder._id);
+      expect(repository.deleteById).toHaveBeenCalledWith(mockOrder._id);
+    });
+
+    it('should throw NotFoundException when order not found', async () => {
+      jest.spyOn(repository, 'deleteById').mockRejectedValue(
+        new NotFoundException('Document was not found'),
+      );
+      await expect(service.remove('nonexistent_id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should call deleteById with correct id', async () => {
+      const orderId = '507f1f77bcf86cd799439011';
+      await service.remove(orderId);
+      expect(repository.deleteById).toHaveBeenCalledWith(orderId);
+      expect(repository.deleteById).toHaveBeenCalledTimes(1);
     });
   });
 });

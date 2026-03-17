@@ -22,9 +22,6 @@ export class OrdersService {
     private readonly httpService: HttpService,
   ) {}
 
-  /**
-   * Integration point: calls Products microservice to validate product IDs and get prices.
-   */
   private async getProductInfo(productId: string): Promise<ProductInfo> {
     const baseUrl = this.configService.get<string>('PRODUCTS_HTTP_BASEURL');
     if (!baseUrl) {
@@ -47,7 +44,6 @@ export class OrdersService {
     }
   }
 
-  // ← userId now comes as separate parameter from JWT token
   async create(createOrderDto: CreateOrderDto, userId: string): Promise<OrderDocument> {
     const itemsWithPrice: OrderDocument['items'] = [];
     let totalAmount = 0;
@@ -65,7 +61,7 @@ export class OrdersService {
     }
 
     return this.ordersRepository.create({
-      userId, // ← from JWT token, not request body
+      userId,
       items: itemsWithPrice,
       status: OrderStatus.PENDING,
       totalAmount,
@@ -93,5 +89,12 @@ export class OrdersService {
       { _id: id } as any,
       { $set: { status: dto.status } } as any,
     );
+  }
+
+  // ← NEW: Delete order (uses deleteById from repository)
+  async remove(id: string): Promise<void> {
+    await this.ordersRepository.deleteById(id);
+    // AbstractRepository's findOneAndDelete already throws
+    // NotFoundException automatically if order not found
   }
 }

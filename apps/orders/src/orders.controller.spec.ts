@@ -42,11 +42,12 @@ describe('OrdersController', () => {
               ...mockOrder,
               status: OrderStatus.CONFIRMED,
             }),
+            remove: jest.fn().mockResolvedValue(undefined), // ← NEW
           },
         },
       ],
     })
-      .overrideGuard(require('./guards/jwt-auth.guard').JwtAuthGuard) // ← bypass JWT guard in tests
+      .overrideGuard(require('./guards/jwt-auth.guard').JwtAuthGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -61,11 +62,11 @@ describe('OrdersController', () => {
   describe('create', () => {
     it('should create an order', async () => {
       const dto: CreateOrderDto = {
-        items: [{ productId: 'prod_001', quantity: 2 }], // ← no userId in DTO
+        items: [{ productId: 'prod_001', quantity: 2 }],
       };
-      const result = await controller.create(mockRequest as any, dto); // ← pass mockRequest
+      const result = await controller.create(mockRequest as any, dto);
       expect(result).toEqual(mockOrder);
-      expect(service.create).toHaveBeenCalledWith(dto, 'user_123'); // ← userId passed separately
+      expect(service.create).toHaveBeenCalledWith(dto, 'user_123');
     });
   });
 
@@ -76,10 +77,19 @@ describe('OrdersController', () => {
     });
   });
 
-  describe('findOne', () => {
-    it('should return a single order', async () => {
-      expect(await controller.findOne(mockOrder._id)).toEqual(mockOrder);
-      expect(service.findOne).toHaveBeenCalledWith(mockOrder._id);
+  // ← NEW: getMyOrders test
+  describe('getMyOrders', () => {
+    it('should return orders for logged in user from JWT token', async () => {
+      const result = await controller.getMyOrders(mockRequest as any);
+      expect(result).toEqual([mockOrder]);
+      expect(service.findByUserId).toHaveBeenCalledWith('user_123'); // ← userId from token
+    });
+
+    it('should use sub if userId not present in token', async () => {
+      const reqWithSub = { user: { sub: 'user_123' } };
+      const result = await controller.getMyOrders(reqWithSub as any);
+      expect(result).toEqual([mockOrder]);
+      expect(service.findByUserId).toHaveBeenCalledWith('user_123');
     });
   });
 
@@ -90,12 +100,34 @@ describe('OrdersController', () => {
     });
   });
 
+  describe('findOne', () => {
+    it('should return a single order', async () => {
+      expect(await controller.findOne(mockOrder._id)).toEqual(mockOrder);
+      expect(service.findOne).toHaveBeenCalledWith(mockOrder._id);
+    });
+  });
+
   describe('updateStatus', () => {
     it('should update order status', async () => {
       const dto: UpdateOrderStatusDto = { status: OrderStatus.CONFIRMED };
       const result = await controller.updateStatus(mockOrder._id, dto);
       expect(result).toEqual({ ...mockOrder, status: OrderStatus.CONFIRMED });
       expect(service.updateStatus).toHaveBeenCalledWith(mockOrder._id, dto);
+    });
+  });
+
+  // ← NEW: remove test
+  describe('remove', () => {
+    it('should delete an order', async () => {
+      const result = await controller.remove(mockOrder._id);
+      expect(result).toBeUndefined();
+      expect(service.remove).toHaveBeenCalledWith(mockOrder._id);
+    });
+
+    it('should call remove with correct order id', async () => {
+      const orderId = '507f1f77bcf86cd799439011';
+      await controller.remove(orderId);
+      expect(service.remove).toHaveBeenCalledWith(orderId);
     });
   });
 });

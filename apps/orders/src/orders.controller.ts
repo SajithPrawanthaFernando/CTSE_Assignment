@@ -1,12 +1,15 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
@@ -27,7 +30,7 @@ export class OrdersController {
   @ApiResponse({ status: 400, description: 'Invalid product or request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   create(@Request() req, @Body() createOrderDto: CreateOrderDto) {
-    const userId = req.user?.userId || req.user?.sub; // ← extract userId from JWT
+    const userId = req.user?.userId || req.user?.sub;
     return this.ordersService.create(createOrderDto, userId);
   }
 
@@ -39,8 +42,18 @@ export class OrdersController {
     return this.ordersService.findAll();
   }
 
+  // ← NEW: Get my orders from JWT token (secure)
+  @Get('my-orders')
+  @ApiOperation({ summary: 'Get my orders (extracted from JWT token)' })
+  @ApiResponse({ status: 200, description: 'List of orders for logged in user.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  getMyOrders(@Request() req) {
+    const userId = req.user?.userId || req.user?.sub; // ← from token, not URL
+    return this.ordersService.findByUserId(userId);
+  }
+
   @Get('by-user/:userId')
-  @ApiOperation({ summary: 'List orders for a user' })
+  @ApiOperation({ summary: 'List orders for a specific user (admin use)' })
   @ApiResponse({ status: 200, description: 'List of orders for the user.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiParam({ name: 'userId', description: 'User ID to filter orders' })
@@ -67,5 +80,16 @@ export class OrdersController {
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ) {
     return this.ordersService.updateStatus(id, updateOrderStatusDto);
+  }
+
+  // ← NEW: Delete order
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete an order' })
+  @ApiResponse({ status: 204, description: 'Order deleted.' })
+  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  remove(@Param('id') id: string) {
+    return this.ordersService.remove(id);
   }
 }

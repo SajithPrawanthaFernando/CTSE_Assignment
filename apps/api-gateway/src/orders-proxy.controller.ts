@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -30,7 +33,11 @@ export class OrdersProxyController {
 
   @Post()
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
-  async create(@Body() body: unknown, @Req() req: Request, @Res() res: Response) {
+  async create(
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     const response = await lastValueFrom(
       this.http.post(`${this.base()}/orders`, body, {
         headers: this.forwardHeaders(req),
@@ -45,6 +52,18 @@ export class OrdersProxyController {
     const response = await lastValueFrom(
       this.http.get(`${this.base()}/orders`, {
         headers: this.forwardHeaders(req),
+        validateStatus: () => true,
+      }),
+    );
+    return res.status(response.status).json(response.data);
+  }
+
+  // ← NEW: Get my orders (secure - userId from JWT token)
+  @Get('my-orders')
+  async getMyOrders(@Req() req: Request, @Res() res: Response) {
+    const response = await lastValueFrom(
+      this.http.get(`${this.base()}/orders/my-orders`, {
+        headers: this.forwardHeaders(req), // ← forwards JWT token
         validateStatus: () => true,
       }),
     );
@@ -90,6 +109,23 @@ export class OrdersProxyController {
   ) {
     const response = await lastValueFrom(
       this.http.patch(`${this.base()}/orders/${id}/status`, body, {
+        headers: this.forwardHeaders(req),
+        validateStatus: () => true,
+      }),
+    );
+    return res.status(response.status).json(response.data);
+  }
+
+  // ← NEW: Delete order
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const response = await lastValueFrom(
+      this.http.delete(`${this.base()}/orders/${id}`, {
         headers: this.forwardHeaders(req),
         validateStatus: () => true,
       }),
