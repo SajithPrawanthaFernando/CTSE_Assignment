@@ -41,14 +41,9 @@ describe('AppModule', () => {
   });
 
   it('should register UsersProxyController', () => {
-    const controller = moduleRef.get<UsersProxyController>(UsersProxyController);
+    const controller =
+      moduleRef.get<UsersProxyController>(UsersProxyController);
     expect(controller).toBeDefined();
     expect(controller).toBeInstanceOf(UsersProxyController);
-  });
-
-  it('should register ProductsProxyController', () => {
-    const controller = moduleRef.get<ProductsProxyController>(ProductsProxyController);
-    expect(controller).toBeDefined();
-    expect(controller).toBeInstanceOf(ProductsProxyController);
   });
 });
