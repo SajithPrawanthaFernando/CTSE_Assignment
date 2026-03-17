@@ -78,7 +78,7 @@ describe('ProductsController', () => {
         category: 'Electronics',
         active: true,
         tags: ['electronics', 'peripherals'],
-        imageUrl: 'https://example.com/mouse.jpg',
+        image: 'https://example.com/mouse.jpg',
       };
 
       productsServiceMock.create.mockResolvedValueOnce(mockProduct);

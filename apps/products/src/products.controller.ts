@@ -1,3 +1,4 @@
+// apps/products/src/products.controller.ts
 import {
   Controller,
   Get,
@@ -15,13 +16,15 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
 
+// ← JwtAuthGuard removed entirely — gateway handles auth before forwarding
+
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a product (admin)' })
+  @ApiOperation({ summary: 'Create a product (admin only - via API Gateway)' })
   @ApiResponse({ status: 201, description: 'Product created.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   create(@Body() createProductDto: CreateProductDto) {
@@ -35,15 +38,8 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
-  /**
-   * Integration endpoint for other microservices (e.g. Orders).
-   * GET /products/bulk?ids=id1,id2,id3
-   * Used by Orders service to resolve product details when creating an order.
-   */
   @Get('bulk')
-  @ApiOperation({
-    summary: 'Get multiple products by IDs (integration: for Orders service)',
-  })
+  @ApiOperation({ summary: 'Get multiple products by IDs (integration: for Orders service)' })
   @ApiResponse({ status: 200, description: 'List of products.' })
   findByIds(
     @Query(
@@ -64,7 +60,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a product (admin)' })
+  @ApiOperation({ summary: 'Update a product (admin only - via API Gateway)' })
   @ApiResponse({ status: 200, description: 'Product updated.' })
   @ApiResponse({ status: 404, description: 'Product not found.' })
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
@@ -72,7 +68,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a product (admin)' })
+  @ApiOperation({ summary: 'Delete a product (admin only - via API Gateway)' })
   @ApiResponse({ status: 200, description: 'Product deleted.' })
   @ApiResponse({ status: 404, description: 'Product not found.' })
   remove(@Param('id') id: string) {

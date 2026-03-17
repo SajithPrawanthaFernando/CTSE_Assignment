@@ -28,7 +28,10 @@ export class ProductDocument extends AbstractDocument {
   tags: string[];
 
   @Prop()
-  imageUrl: string;
+  image: string;
+  
+  @Prop({ default: 0 })
+rating: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(ProductDocument);

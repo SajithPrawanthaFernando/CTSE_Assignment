@@ -16,7 +16,15 @@ class AllExceptionsFilter implements ExceptionFilter {
     const status = exception && typeof (exception as any).getStatus === 'function'
       ? (exception as any).getStatus()
       : HttpStatus.INTERNAL_SERVER_ERROR;
-    const message = exception instanceof Error ? exception.message : 'Internal server error';
+    
+    let message = exception instanceof Error ? exception.message : 'Internal server error';
+    let validationErrors: any = undefined;
+
+    // Extract validation errors if present
+    if ((exception as any)?.response?.message && Array.isArray((exception as any).response.message)) {
+      validationErrors = (exception as any).response.message;
+      message = 'Validation failed';
+    }
 
     this.logger.error(`${req.method} ${req.url} → ${status}: ${message}`);
     if (exception instanceof Error && exception.stack) {
@@ -26,6 +34,7 @@ class AllExceptionsFilter implements ExceptionFilter {
     res.status(status).json({
       statusCode: status,
       message,
+      errors: validationErrors,
       error: status === 500 ? 'Check server logs; often caused by MongoDB not running or wrong MONGODB_URI.' : undefined,
     });
   }
@@ -45,6 +54,9 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
@@ -63,6 +75,6 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? 3002;
   await app.listen(port);
   console.log(`Product Catalog service listening on http://localhost:${port}`);
-  console.log(`Swagger UI: http://localhost:${port}/api`);
+  console.log(`Swagger UI: http://localhost:${port}`);
 }
 bootstrap();

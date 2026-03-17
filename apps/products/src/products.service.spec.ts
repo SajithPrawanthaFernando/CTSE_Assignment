@@ -19,7 +19,8 @@ describe('ProductsService', () => {
     category: 'Electronics',
     active: true,
     tags: ['electronics', 'peripherals'],
-    imageUrl: 'https://example.com/mouse.jpg',
+    image: 'https://example.com/mouse.jpg',  // renamed from imageUrl
+    rating: 4.5,                              // added
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -91,7 +92,8 @@ describe('ProductsService', () => {
         category: 'Electronics',
         active: true,
         tags: ['electronics'],
-        imageUrl: 'https://example.com/mouse.jpg',
+        image: 'https://example.com/mouse.jpg',  // renamed from imageUrl
+        rating: 4.5,                              // added
       };
 
       productsRepositoryMock.create.mockResolvedValueOnce(mockProduct);

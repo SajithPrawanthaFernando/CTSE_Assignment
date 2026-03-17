@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, Min, Max } from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'Wireless Mouse' })
@@ -46,5 +46,12 @@ export class CreateProductDto {
   @ApiPropertyOptional({ example: 'https://example.com/mouse.jpg' })
   @IsOptional()
   @IsString()
-  imageUrl?: string;
+  image?: string;          // renamed from imageUrl → image
+
+  @ApiPropertyOptional({ example: 4.5 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  rating?: number;         // added
 }
