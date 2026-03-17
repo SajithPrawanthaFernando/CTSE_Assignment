@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { of } from 'rxjs';
 import { UsersProxyController } from './users-proxy.controller';
 
@@ -22,19 +23,29 @@ describe('UsersProxyController', () => {
       delete: jest.fn(),
     };
 
+    const mockConfigService = {
+      get: jest.fn((key: string) => {
+        const config: Record<string, string> = {
+          AUTH_HTTP_BASEURL: 'http://localhost:3001',
+        };
+        return config[key];
+      }),
+    };
+
     const moduleRef = await Test.createTestingModule({
       controllers: [UsersProxyController],
-      providers: [{ provide: HttpService, useValue: httpService }],
+      providers: [
+        { provide: HttpService, useValue: httpService },
+        { provide: ConfigService, useValue: mockConfigService },
+      ],
     }).compile();
 
     controller = moduleRef.get(UsersProxyController);
   });
 
   it('should cover base() and forwardHeaders() defaults', () => {
-    // cover base()
     expect((controller as any).base()).toBe('http://localhost:3001');
 
-    // cover forwardHeaders() when cookie/authorization are missing
     const req: any = { headers: {} };
     expect((controller as any).forwardHeaders(req)).toEqual({
       cookie: '',
@@ -91,7 +102,7 @@ describe('UsersProxyController', () => {
     };
     httpService.post.mockReturnValueOnce(of(mockAxiosResponse as any));
 
-    const req: any = { headers: {} }; // no cookie/authorization
+    const req: any = { headers: {} };
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     await controller.create({ email: 'a@b.com' }, req, res);
