@@ -16,7 +16,7 @@ describe('ProductsService', () => {
     price: 29.99,
     currency: 'USD',
     stock: 100,
-    category: 'Electronics',
+    category: 'Dairy',
     active: true,
     tags: ['electronics', 'peripherals'],
     image: 'https://example.com/mouse.jpg',  // renamed from imageUrl
