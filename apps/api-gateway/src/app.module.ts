@@ -39,7 +39,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
   ],
   controllers: [AuthProxyController, UsersProxyController, ProductsProxyController],
   providers: [
-    JwtStrategy,
+    JwtStrategy,  // ← lightweight gateway strategy, no UsersService needed
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
