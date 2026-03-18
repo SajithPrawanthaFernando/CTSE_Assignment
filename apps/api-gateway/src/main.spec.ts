@@ -1,7 +1,6 @@
 import { bootstrap } from './main';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
-import cookieParser from 'cookie-parser';
 
 jest.mock('@nestjs/core', () => ({
   NestFactory: { create: jest.fn() },
@@ -126,7 +125,6 @@ describe('API Gateway – main.ts', () => {
   });
 
   it('should pass the return value of cookieParser() to app.use()', async () => {
-    
     const appMock: any = {
       enableCors: jest.fn(),
       use: jest.fn(),
@@ -136,7 +134,8 @@ describe('API Gateway – main.ts', () => {
 
     await bootstrap();
 
-    expect(appMock.use).toHaveBeenCalledWith(cookieParser());
+    // cookie-parser is mocked to return 'cookieParserMiddleware'
+    expect(appMock.use).toHaveBeenCalledWith('cookieParserMiddleware');
   });
 
   // ─── app.listen – port ────────────────────────────────────────────────────
