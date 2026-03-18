@@ -1,6 +1,7 @@
-import { bootstrap } from './main';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
+import { AppModule } from './app.module';
+import * as dotenv from 'dotenv';
 
 jest.mock('@nestjs/core', () => ({
   NestFactory: { create: jest.fn() },
@@ -10,21 +11,42 @@ jest.mock('cookie-parser', () => jest.fn(() => 'cookieParserMiddleware'));
 
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 
-describe('API Gateway – main.ts', () => {
-  beforeEach(() => {
+jest.mock('./app.module', () => ({ AppModule: class AppModule {} }));
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function makeAppMock() {
+  return {
+    enableCors: jest.fn(),
+    use: jest.fn(),
+    listen: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+// ─── Suite ────────────────────────────────────────────────────────────────────
+
+describe('main.ts', () => {
+  let bootstrap: () => Promise<any>;
+
+  beforeEach(async () => {
     jest.clearAllMocks();
     delete process.env.GATEWAY_HTTP_PORT;
     jest.spyOn(Logger, 'log').mockImplementation(() => {});
+    bootstrap = (await import('./main')).bootstrap;
   });
 
-  // ─── NestFactory.create ───────────────────────────────────────────────────
+  // ─── dotenv ────────────────────────────────────────────────────────────────
+
+  it('should call dotenv.config with the gateway .env path', () => {
+    expect(dotenv.config).toHaveBeenCalledWith({
+      path: 'apps/api-gateway/.env',
+    });
+  });
+
+  // ─── NestFactory.create ────────────────────────────────────────────────────
 
   it('should call NestFactory.create once', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -32,12 +54,17 @@ describe('API Gateway – main.ts', () => {
     expect(NestFactory.create).toHaveBeenCalledTimes(1);
   });
 
-  it('should return the app instance created by NestFactory', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+  it('should call NestFactory.create with AppModule', async () => {
+    const appMock = makeAppMock();
+    (NestFactory.create as any).mockResolvedValue(appMock);
+
+    await bootstrap();
+
+    expect(NestFactory.create).toHaveBeenCalledWith(AppModule);
+  });
+
+  it('should return the app instance', async () => {
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     const result = await bootstrap();
@@ -51,42 +78,10 @@ describe('API Gateway – main.ts', () => {
     await expect(bootstrap()).rejects.toThrow('Module init failed');
   });
 
-  // ─── enableCors ───────────────────────────────────────────────────────────
-
-  it('should call enableCors with localhost:3000 as an allowed origin', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
-    (NestFactory.create as any).mockResolvedValue(appMock);
-
-    await bootstrap();
-
-    const { origin } = appMock.enableCors.mock.calls[0][0];
-    expect(origin).toContain('http://localhost:3000');
-  });
-
-  it('should call enableCors with localhost:4200 as an allowed origin', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
-    (NestFactory.create as any).mockResolvedValue(appMock);
-
-    await bootstrap();
-
-    const { origin } = appMock.enableCors.mock.calls[0][0];
-    expect(origin).toContain('http://localhost:4200');
-  });
+  // ─── enableCors ────────────────────────────────────────────────────────────
 
   it('should call enableCors with credentials: true', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -96,12 +91,28 @@ describe('API Gateway – main.ts', () => {
     );
   });
 
+  it('should call enableCors with localhost:3000 as an allowed origin', async () => {
+    const appMock = makeAppMock();
+    (NestFactory.create as any).mockResolvedValue(appMock);
+
+    await bootstrap();
+
+    const { origin } = appMock.enableCors.mock.calls[0][0];
+    expect(origin).toContain('http://localhost:3000');
+  });
+
+  it('should call enableCors with localhost:4200 as an allowed origin', async () => {
+    const appMock = makeAppMock();
+    (NestFactory.create as any).mockResolvedValue(appMock);
+
+    await bootstrap();
+
+    const { origin } = appMock.enableCors.mock.calls[0][0];
+    expect(origin).toContain('http://localhost:4200');
+  });
+
   it('should call enableCors exactly once', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -109,14 +120,10 @@ describe('API Gateway – main.ts', () => {
     expect(appMock.enableCors).toHaveBeenCalledTimes(1);
   });
 
-  // ─── Middleware ───────────────────────────────────────────────────────────
+  // ─── cookieParser middleware ───────────────────────────────────────────────
 
   it('should register cookieParser middleware via app.use()', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -125,27 +132,18 @@ describe('API Gateway – main.ts', () => {
   });
 
   it('should pass the return value of cookieParser() to app.use()', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
 
-    // cookie-parser is mocked to return 'cookieParserMiddleware'
     expect(appMock.use).toHaveBeenCalledWith('cookieParserMiddleware');
   });
 
-  // ─── app.listen – port ────────────────────────────────────────────────────
+  // ─── app.listen ────────────────────────────────────────────────────────────
 
   it('should listen on default port 3009 when GATEWAY_HTTP_PORT is not set', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -155,12 +153,7 @@ describe('API Gateway – main.ts', () => {
 
   it('should listen on GATEWAY_HTTP_PORT when the env var is set', async () => {
     process.env.GATEWAY_HTTP_PORT = '5000';
-
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -170,12 +163,7 @@ describe('API Gateway – main.ts', () => {
 
   it('should always bind to 0.0.0.0 regardless of port', async () => {
     process.env.GATEWAY_HTTP_PORT = '8080';
-
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -184,11 +172,7 @@ describe('API Gateway – main.ts', () => {
   });
 
   it('should call listen exactly once', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -197,9 +181,8 @@ describe('API Gateway – main.ts', () => {
   });
 
   it('should propagate rejection from app.listen()', async () => {
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
+    const appMock = {
+      ...makeAppMock(),
       listen: jest.fn().mockRejectedValue(new Error('Port in use')),
     };
     (NestFactory.create as any).mockResolvedValue(appMock);
@@ -207,16 +190,11 @@ describe('API Gateway – main.ts', () => {
     await expect(bootstrap()).rejects.toThrow('Port in use');
   });
 
-  // ─── Logger ───────────────────────────────────────────────────────────────
+  // ─── Logger ────────────────────────────────────────────────────────────────
 
   it('should log once after the app starts', async () => {
     const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
-
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -226,12 +204,7 @@ describe('API Gateway – main.ts', () => {
 
   it('should include the default port 3009 in the log message', async () => {
     const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
-
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -242,12 +215,7 @@ describe('API Gateway – main.ts', () => {
   it('should include the custom port in the log message', async () => {
     process.env.GATEWAY_HTTP_PORT = '7777';
     const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
-
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
-      listen: jest.fn().mockResolvedValue(undefined),
-    };
+    const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
     await bootstrap();
@@ -257,10 +225,8 @@ describe('API Gateway – main.ts', () => {
 
   it('should not log if listen() throws', async () => {
     const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
-
-    const appMock: any = {
-      enableCors: jest.fn(),
-      use: jest.fn(),
+    const appMock = {
+      ...makeAppMock(),
       listen: jest.fn().mockRejectedValue(new Error('crash')),
     };
     (NestFactory.create as any).mockResolvedValue(appMock);
@@ -270,7 +236,17 @@ describe('API Gateway – main.ts', () => {
     expect(logSpy).not.toHaveBeenCalled();
   });
 
-  // ─── Call ordering ────────────────────────────────────────────────────────
+  // ─── Module shape ──────────────────────────────────────────────────────────
+
+  it('should export bootstrap as a function', () => {
+    expect(typeof bootstrap).toBe('function');
+  });
+
+  it('should not auto-call bootstrap on import', () => {
+    expect(NestFactory.create).not.toHaveBeenCalled();
+  });
+
+  // ─── Call ordering ─────────────────────────────────────────────────────────
 
   it('should call enableCors before listen', async () => {
     const order: string[] = [];
