@@ -25,35 +25,6 @@ jest.mock('./products.module', () => ({ ProductsModule: class ProductsModule {} 
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 // Calls bootstrap() directly by importing main.ts once (Jest caches it).
-// Each call sets up the appMock BEFORE triggering the import so bootstrap()
-// picks up the right mock. Returns a promise that resolves when listen() fires.
-
-let mainLoaded = false;
-
-async function runMain(appMock: any) {
-  let resolveListen: any;
-  const listenDone = new Promise(r => { resolveListen = r; });
-
-  (appMock.listen as any).mockImplementationOnce(() => {
-    resolveListen();
-    return Promise.resolve();
-  });
-
-  (NestFactory.create as any).mockResolvedValueOnce(appMock);
-
-  if (!mainLoaded) {
-    mainLoaded = true;
-    await import('./main');
-  } else {
-    // main.ts is already cached — manually invoke bootstrap via the cached export.
-    // Since bootstrap is not exported we trigger it by having NestFactory.create
-    // already mocked; the module-level call already happened on first import.
-    // For subsequent tests we just call the side effects directly via the mock.
-    resolveListen();
-  }
-
-  return listenDone;
-}
 
 function makeAppMock(port: number | undefined = 3002): any {
   return {
