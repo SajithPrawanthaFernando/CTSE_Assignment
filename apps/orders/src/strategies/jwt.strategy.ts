@@ -7,7 +7,14 @@ import { ConfigService } from '@nestjs/config';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        // ← Support both cookie and Bearer token
+        (request: any) =>
+          request?.cookies?.Authentication ||
+          request?.Authentication ||
+          request?.headers?.Authentication ||
+          ExtractJwt.fromAuthHeaderAsBearerToken()(request), // ← Bearer for Postman
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET'),
     });
@@ -15,8 +22,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     return {
-      userId: payload.sub || payload.userId,
+      userId: payload.sub || payload.userId, // ← support both formats
       email: payload.email,
+      roles: payload.roles ?? [], // ← include roles array from token
     };
   }
 }

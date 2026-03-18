@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { OrderStatus } from './schemas/order.schema';
+import { RolesGuard } from './guards/roles.guard';
+import { Role } from './decorators/roles.decorator';
 
 describe('CartController', () => {
   let controller: CartController;
@@ -29,7 +31,6 @@ describe('CartController', () => {
     totalAmount: 0,
   };
 
-  // ← Mock order returned after checkout
   const mockOrder = {
     _id: '607f1f77bcf86cd799439022',
     userId: 'user_123',
@@ -46,10 +47,12 @@ describe('CartController', () => {
     shippingAddress: '123 Main St, City',
   };
 
+  // ← Updated: includes roles
   const mockRequest = {
     user: {
       userId: 'user_123',
       sub: 'user_123',
+      roles: [Role.USER], // ← added roles
     },
   };
 
@@ -78,12 +81,14 @@ describe('CartController', () => {
             }),
             removeItem: jest.fn().mockResolvedValue(mockEmptyCart),
             clearCart: jest.fn().mockResolvedValue(mockEmptyCart),
-            checkout: jest.fn().mockResolvedValue(mockOrder), // ← returns order now
+            checkout: jest.fn().mockResolvedValue(mockOrder),
           },
         },
       ],
     })
       .overrideGuard(require('./guards/jwt-auth.guard').JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard) // ← added: bypass RolesGuard in tests
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -103,10 +108,18 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123' } };
+      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
       const result = await controller.getCart(reqWithSub as any);
       expect(result).toEqual(mockCart);
       expect(service.getCart).toHaveBeenCalledWith('user_123');
+    });
+
+    it('should not require admin role', () => {
+      const roles = Reflect.getMetadata(
+        'roles',
+        CartController.prototype.getCart,
+      );
+      expect(roles).toBeUndefined(); // ← accessible to all logged in users
     });
   });
 
@@ -125,10 +138,18 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123' } };
+      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
       const dto = { productId: 'prod_001', quantity: 1 };
       await controller.addItem(reqWithSub as any, dto);
       expect(service.addItem).toHaveBeenCalledWith('user_123', dto);
+    });
+
+    it('should not require admin role', () => {
+      const roles = Reflect.getMetadata(
+        'roles',
+        CartController.prototype.addItem,
+      );
+      expect(roles).toBeUndefined();
     });
   });
 
@@ -154,6 +175,14 @@ describe('CartController', () => {
         dto,
       );
     });
+
+    it('should not require admin role', () => {
+      const roles = Reflect.getMetadata(
+        'roles',
+        CartController.prototype.updateItem,
+      );
+      expect(roles).toBeUndefined();
+    });
   });
 
   describe('removeItem', () => {
@@ -168,6 +197,14 @@ describe('CartController', () => {
       await controller.removeItem(mockRequest as any, 'prod_005');
       expect(service.removeItem).toHaveBeenCalledWith('user_123', 'prod_005');
     });
+
+    it('should not require admin role', () => {
+      const roles = Reflect.getMetadata(
+        'roles',
+        CartController.prototype.removeItem,
+      );
+      expect(roles).toBeUndefined();
+    });
   });
 
   describe('clearCart', () => {
@@ -179,13 +216,20 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123' } };
+      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
       await controller.clearCart(reqWithSub as any);
       expect(service.clearCart).toHaveBeenCalledWith('user_123');
     });
+
+    it('should not require admin role', () => {
+      const roles = Reflect.getMetadata(
+        'roles',
+        CartController.prototype.clearCart,
+      );
+      expect(roles).toBeUndefined();
+    });
   });
 
-  // ← Updated: checkout now creates order
   describe('checkout', () => {
     it('should create order from cart with shipping address', async () => {
       const body = { shippingAddress: '123 Main St, City' };
@@ -218,7 +262,7 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123' } };
+      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
       const body = { shippingAddress: '123 Main St' };
       await controller.checkout(reqWithSub as any, body);
 
@@ -226,6 +270,14 @@ describe('CartController', () => {
         'user_123',
         '123 Main St',
       );
+    });
+
+    it('should not require admin role', () => {
+      const roles = Reflect.getMetadata(
+        'roles',
+        CartController.prototype.checkout,
+      );
+      expect(roles).toBeUndefined();
     });
   });
 });

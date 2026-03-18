@@ -14,6 +14,8 @@ import { IsOptional, IsString } from 'class-validator';
 import { CartService } from './cart.service';
 import { AddCartItemDto, UpdateCartItemDto } from './dto/cart.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles, Role } from './decorators/roles.decorator';
 
 // ← DTO for checkout body
 class CheckoutDto {
@@ -25,7 +27,7 @@ class CheckoutDto {
 
 @ApiTags('cart')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}

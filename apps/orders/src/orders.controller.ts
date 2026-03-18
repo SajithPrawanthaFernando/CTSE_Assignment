@@ -17,10 +17,12 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';       // ← added
+import { Roles, Role } from './decorators/roles.decorator'; // ← added
 
 @ApiTags('orders')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard) // ← added RolesGuard
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -36,9 +38,11 @@ export class OrdersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all orders' })
+  @Roles(Role.ADMIN)                                     // ← Admin only
+  @ApiOperation({ summary: 'List all orders (Admin only)' })
   @ApiResponse({ status: 200, description: 'List of orders.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only.' })
   findAll() {
     return this.ordersService.findAll();
   }
@@ -53,9 +57,11 @@ export class OrdersController {
   }
 
   @Get('by-user/:userId')
-  @ApiOperation({ summary: 'List orders for a specific user (admin use)' })
+  @Roles(Role.ADMIN)                                     // ← Admin only
+  @ApiOperation({ summary: 'List orders for a specific user (Admin only)' })
   @ApiResponse({ status: 200, description: 'List of orders for the user.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only.' })
   @ApiParam({ name: 'userId', description: 'User ID to filter orders' })
   findByUserId(@Param('userId') userId: string) {
     return this.ordersService.findByUserId(userId);
@@ -70,7 +76,6 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
 
-  // ← NEW: Update order items and/or shipping address
   @Patch(':id')
   @ApiOperation({ summary: 'Update order items or shipping address (PENDING orders only)' })
   @ApiResponse({ status: 200, description: 'Order updated.' })
@@ -85,10 +90,12 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
-  @ApiOperation({ summary: 'Update order status' })
+  @Roles(Role.ADMIN)                                     // ← Admin only
+  @ApiOperation({ summary: 'Update order status (Admin only)' })
   @ApiResponse({ status: 200, description: 'Order status updated.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only.' })
   updateStatus(
     @Param('id') id: string,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,

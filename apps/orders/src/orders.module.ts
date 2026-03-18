@@ -15,6 +15,8 @@ import { OrdersRepository } from './orders.repository';
 import { CartRepository } from './cart.repository'; 
 import { HealthModule } from '@app/common';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { Reflector } from '@nestjs/core';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     CartService,
     CartRepository,
     JwtStrategy,
+    RolesGuard,  
+    Reflector, 
   ], // ← added JwtStrategy
 })
 export class OrdersModule {}
