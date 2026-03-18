@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
+import { AppModule } from './app.module';
+import * as dotenv from 'dotenv';
 
 jest.mock('@nestjs/core', () => ({
   NestFactory: { create: jest.fn() },
@@ -30,16 +32,12 @@ describe('main.ts', () => {
     jest.clearAllMocks();
     delete process.env.GATEWAY_HTTP_PORT;
     jest.spyOn(Logger, 'log').mockImplementation(() => {});
-    // Re-import after clearing so each test gets a fresh bootstrap reference
-    // without resetting module registry (which would break NestFactory mock)
     bootstrap = (await import('./main')).bootstrap;
   });
 
   // ─── dotenv ────────────────────────────────────────────────────────────────
 
   it('should call dotenv.config with the gateway .env path', () => {
-    const dotenv = require('dotenv');
-    // dotenv.config is called at module scope when main.ts is first imported
     expect(dotenv.config).toHaveBeenCalledWith({
       path: 'apps/api-gateway/.env',
     });
@@ -57,7 +55,6 @@ describe('main.ts', () => {
   });
 
   it('should call NestFactory.create with AppModule', async () => {
-    const { AppModule } = require('./app.module');
     const appMock = makeAppMock();
     (NestFactory.create as any).mockResolvedValue(appMock);
 
@@ -239,14 +236,13 @@ describe('main.ts', () => {
     expect(logSpy).not.toHaveBeenCalled();
   });
 
-  // ─── if (require.main === module) branch ──────────────────────────────────
+  // ─── Module shape ──────────────────────────────────────────────────────────
 
   it('should export bootstrap as a function', () => {
     expect(typeof bootstrap).toBe('function');
   });
 
   it('should not auto-call bootstrap on import', () => {
-    // NestFactory.create is NOT called simply by importing the module
     expect(NestFactory.create).not.toHaveBeenCalled();
   });
 
