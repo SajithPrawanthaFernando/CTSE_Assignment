@@ -10,16 +10,20 @@ import {
   Res,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { lastValueFrom } from 'rxjs';
 import { Request, Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 
 @Controller('users')
 export class UsersProxyController {
-  constructor(private readonly http: HttpService) {}
+  constructor(
+    private readonly http: HttpService,
+    private readonly config: ConfigService,
+  ) {}
 
-  private base() {
-    return process.env.AUTH_HTTP_BASEURL;
+  private base(): string {
+    return this.config.get<string>('AUTH_HTTP_BASEURL') || 'http://localhost:3001';
   }
 
   private forwardHeaders(req: Request) {
