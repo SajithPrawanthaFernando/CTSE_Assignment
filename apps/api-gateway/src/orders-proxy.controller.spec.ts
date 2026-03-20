@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { OrdersProxyController } from './orders-proxy.controller';
 import { OrderStatus } from '../../orders/src/schemas/order.schema';
 

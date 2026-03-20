@@ -5,7 +5,6 @@ import { ProductsService } from './products.service';
 import { ProductsRepository } from './products.repository';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { of } from 'rxjs';
 
 describe('ProductsService', () => {
   let service: ProductsService;

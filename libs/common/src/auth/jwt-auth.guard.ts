@@ -40,7 +40,7 @@ export class JwtAuthGuard implements CanActivate {
         }),
         map(() => true),
         catchError((err) => {
-          this.logger.error('Auth microservice rejected the token');
+          this.logger.error('Auth microservice rejected the token', err);
           return of(false);
         }),
       );
