@@ -23,6 +23,10 @@ jobs:
             dockerfile: apps/orders/Dockerfile
             image: quickbite-orders
             appNameSecret: ORDERS_APP_NAME
+          - name: products
+            dockerfile: apps/products/Dockerfile
+            image: quickbite-products
+            appNameSecret: PRODUCTS_APP_NAME
 
     steps:
       - uses: actions/checkout@v4

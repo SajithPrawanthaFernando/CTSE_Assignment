@@ -16,12 +16,14 @@ import { UsersService } from './users.service';
 import { RolesGuard } from '@app/common/auth/roles.guard';
 import { ChangeRoleDto } from './dto/change-role.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @Throttle({ default: { limit: 3, ttl: 60 * 1000 } })
   async createUser(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

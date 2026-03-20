@@ -57,6 +57,14 @@ services:
     depends_on:
       - mongo
       - products
+    env_file:
+      - ./apps/products/.env
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/products
+    ports:
+      - '3002:3002'
+    depends_on:
+      - mongo
     volumes:
       - .:/usr/src/app
 

@@ -1,6 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import { Logger } from '@nestjs/common';
+import * as dotenv from 'dotenv';
+
+// Load .env before anything else
+dotenv.config({ path: 'apps/api-gateway/.env' });
 
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,7 +17,9 @@ export async function bootstrap() {
 
   app.use(cookieParser());
 
-  await app.listen(process.env.GATEWAY_HTTP_PORT || 3000, '0.0.0.0');
+  const port = process.env.GATEWAY_HTTP_PORT ?? 3009;
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`API Gateway running on http://localhost:${port}`);
 
   return app;
 }
