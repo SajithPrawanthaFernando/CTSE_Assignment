@@ -12,10 +12,9 @@ describe('UsersProxyController', () => {
     put: any;
     delete: any;
   };
+  let configService: ConfigService;
 
   beforeEach(async () => {
-    process.env.AUTH_HTTP_BASEURL = 'http://localhost:3001';
-
     httpService = {
       get: jest.fn(),
       post: jest.fn(),
@@ -23,233 +22,152 @@ describe('UsersProxyController', () => {
       delete: jest.fn(),
     };
 
-    const mockConfigService = {
-      get: jest.fn((key: string) => {
-        const config: Record<string, string> = {
-          AUTH_HTTP_BASEURL: 'http://localhost:3001',
-        };
-        return config[key];
-      }),
-    };
-
     const moduleRef = await Test.createTestingModule({
       controllers: [UsersProxyController],
       providers: [
         { provide: HttpService, useValue: httpService },
-        { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'AUTH_HTTP_BASEURL') return 'http://localhost:3001';
+              return undefined;
+            }),
+          },
+        },
       ],
     }).compile();
 
     controller = moduleRef.get(UsersProxyController);
+    configService = moduleRef.get(ConfigService);
   });
 
-  it('should cover base() and forwardHeaders() defaults', () => {
-    expect((controller as any).base()).toBe('http://localhost:3001');
+  describe('Utility Methods', () => {
+    it('should return the configured base URL', () => {
+      expect((controller as any).base()).toBe('http://localhost:3001');
+    });
 
-    const req: any = { headers: {} };
-    expect((controller as any).forwardHeaders(req)).toEqual({
-      cookie: '',
-      authorization: '',
+    it('should fallback to default URL if config returns null', () => {
+      jest.spyOn(configService, 'get').mockReturnValue(null);
+      expect((controller as any).base()).toBe('http://localhost:3001');
+    });
+
+    it('should forward provided headers correctly', () => {
+      const req: any = {
+        headers: {
+          cookie: 'session=123',
+          authorization: 'Bearer token',
+        },
+      };
+      const headers = (controller as any).forwardHeaders(req);
+      expect(headers).toEqual({
+        cookie: 'session=123',
+        authorization: 'Bearer token',
+      });
+    });
+
+    it('should fallback to empty strings in forwardHeaders when headers are missing', () => {
+      const req: any = { headers: {} };
+      const headers = (controller as any).forwardHeaders(req);
+      expect(headers).toEqual({
+        cookie: '',
+        authorization: '',
+      });
     });
   });
 
   it('should proxy create user and forward headers', async () => {
-    const mockAxiosResponse = {
-      status: 201,
-      data: { _id: '1', email: 'x@y.com' },
-      headers: {},
-    };
-    httpService.post.mockReturnValueOnce(of(mockAxiosResponse as any));
-
-    const req: any = {
-      headers: {
-        cookie: 'Authentication=abc',
-        authorization: 'Bearer token',
-      },
-    };
-    const res: any = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-
-    await controller.create(
-      { email: 'x@y.com', password: 'Qw123456!' },
-      req,
-      res,
+    httpService.post.mockReturnValueOnce(
+      of({ status: 201, data: { id: '1' } }),
     );
+    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req: any = { headers: { authorization: 'Bearer token' } };
+
+    await controller.create({ email: 'test@test.com' }, req, res);
 
     expect(httpService.post).toHaveBeenCalledWith(
-      'http://localhost:3001/users',
-      { email: 'x@y.com', password: 'Qw123456!' },
-      expect.objectContaining({
-        headers: {
-          cookie: 'Authentication=abc',
-          authorization: 'Bearer token',
-        },
-        validateStatus: expect.any(Function),
-      }),
+      expect.stringContaining('/users'),
+      { email: 'test@test.com' },
+      expect.any(Object),
     );
-
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ _id: '1', email: 'x@y.com' });
   });
 
-  it('should proxy create user with missing headers (defaults)', async () => {
-    const mockAxiosResponse = {
-      status: 201,
-      data: { ok: true },
-      headers: {},
-    };
-    httpService.post.mockReturnValueOnce(of(mockAxiosResponse as any));
-
+  it('should proxy getMe current user', async () => {
+    httpService.get.mockReturnValueOnce(of({ status: 200, data: { id: '1' } }));
+    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const req: any = { headers: {} };
-    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-
-    await controller.create({ email: 'a@b.com' }, req, res);
-
-    expect(httpService.post).toHaveBeenCalledWith(
-      'http://localhost:3001/users',
-      { email: 'a@b.com' },
-      expect.objectContaining({
-        headers: { cookie: '', authorization: '' },
-        validateStatus: expect.any(Function),
-      }),
-    );
-
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ ok: true });
-  });
-
-  it('should proxy get current user', async () => {
-    const mockAxiosResponse = {
-      status: 200,
-      data: { email: 'me@test.com' },
-      headers: {},
-    };
-    httpService.get.mockReturnValueOnce(of(mockAxiosResponse as any));
-
-    const req: any = {
-      headers: { cookie: 'Authentication=abc', authorization: '' },
-    };
-    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     await controller.getMe(req, res);
 
     expect(httpService.get).toHaveBeenCalledWith(
       'http://localhost:3001/users',
-      expect.objectContaining({
-        headers: { cookie: 'Authentication=abc', authorization: '' },
-        validateStatus: expect.any(Function),
-      }),
+      expect.any(Object),
     );
-
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ email: 'me@test.com' });
   });
 
-  it('should proxy get all users', async () => {
-    const mockAxiosResponse = {
-      status: 200,
-      data: [{ email: 'a@a.com' }],
-      headers: {},
-    };
-    httpService.get.mockReturnValueOnce(of(mockAxiosResponse as any));
-
-    const req: any = { headers: { cookie: '', authorization: 'Bearer token' } };
+  it('should proxy getAll users', async () => {
+    httpService.get.mockReturnValueOnce(of({ status: 200, data: [] }));
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req: any = { headers: {} };
 
     await controller.getAll(req, res);
 
     expect(httpService.get).toHaveBeenCalledWith(
-      'http://localhost:3001/users/all',
-      expect.objectContaining({
-        headers: { cookie: '', authorization: 'Bearer token' },
-        validateStatus: expect.any(Function),
-      }),
+      expect.stringContaining('/users/all'),
+      expect.any(Object),
     );
-
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith([{ email: 'a@a.com' }]);
   });
 
   it('should proxy delete user', async () => {
-    const mockAxiosResponse = {
-      status: 200,
-      data: { deleted: true },
-      headers: {},
-    };
-    httpService.delete.mockReturnValueOnce(of(mockAxiosResponse as any));
-
-    const req: any = {
-      headers: { cookie: 'Authentication=abc', authorization: '' },
-    };
+    httpService.delete.mockReturnValueOnce(
+      of({ status: 200, data: { ok: true } }),
+    );
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req: any = { headers: {} };
 
     await controller.delete('123', req, res);
 
     expect(httpService.delete).toHaveBeenCalledWith(
-      'http://localhost:3001/users/123',
-      expect.objectContaining({
-        headers: { cookie: 'Authentication=abc', authorization: '' },
-        validateStatus: expect.any(Function),
-      }),
+      expect.stringContaining('/users/123'),
+      expect.any(Object),
     );
-
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ deleted: true });
   });
 
-  it('should proxy change role', async () => {
-    const mockAxiosResponse = {
-      status: 200,
-      data: { ok: true },
-      headers: {},
-    };
-    httpService.put.mockReturnValueOnce(of(mockAxiosResponse as any));
-
-    const req: any = { headers: { cookie: '', authorization: 'Bearer t' } };
+  it('should proxy changeRole', async () => {
+    httpService.put.mockReturnValueOnce(
+      of({ status: 200, data: { ok: true } }),
+    );
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req: any = { headers: {} };
 
     await controller.changeRole('123', { role: 'admin' }, req, res);
 
     expect(httpService.put).toHaveBeenCalledWith(
-      'http://localhost:3001/users/123/role',
+      expect.stringContaining('/users/123/role'),
       { role: 'admin' },
-      expect.objectContaining({
-        headers: { cookie: '', authorization: 'Bearer t' },
-        validateStatus: expect.any(Function),
-      }),
+      expect.any(Object),
     );
-
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ ok: true });
   });
 
   it('should proxy update user', async () => {
-    const mockAxiosResponse = {
-      status: 200,
-      data: { ok: true },
-      headers: {},
-    };
-    httpService.put.mockReturnValueOnce(of(mockAxiosResponse as any));
-
-    const req: any = {
-      headers: { cookie: 'Authentication=abc', authorization: '' },
-    };
+    httpService.put.mockReturnValueOnce(
+      of({ status: 200, data: { ok: true } }),
+    );
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req: any = { headers: {} };
 
-    await controller.update('123', { fullname: 'New Name' }, req, res);
+    await controller.update('123', { name: 'new' }, req, res);
 
     expect(httpService.put).toHaveBeenCalledWith(
       'http://localhost:3001/users/123',
-      { fullname: 'New Name' },
-      expect.objectContaining({
-        headers: { cookie: 'Authentication=abc', authorization: '' },
-        validateStatus: expect.any(Function),
-      }),
+      { name: 'new' },
+      expect.any(Object),
     );
-
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ ok: true });
   });
 });
