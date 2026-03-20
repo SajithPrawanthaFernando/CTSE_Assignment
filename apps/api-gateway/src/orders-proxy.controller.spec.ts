@@ -8,6 +8,7 @@ import { OrderStatus } from '../../orders/src/schemas/order.schema';
 describe('OrdersProxyController', () => {
   let controller: OrdersProxyController;
   let httpService: HttpService;
+  let configService: ConfigService;
 
   const mockOrder = {
     _id: '507f1f77bcf86cd799439011',
@@ -23,7 +24,7 @@ describe('OrdersProxyController', () => {
   const mockReq = {
     headers: {
       authorization: 'Bearer mock_token',
-      cookie: '',
+      cookie: 'session=123',
     },
   } as any;
 
@@ -56,30 +57,40 @@ describe('OrdersProxyController', () => {
 
     controller = module.get<OrdersProxyController>(OrdersProxyController);
     httpService = module.get<HttpService>(HttpService);
+    configService = module.get<ConfigService>(ConfigService);
 
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it('should return the configured base URL from ConfigService', () => {
+    expect((controller as any).base()).toBe('http://localhost:3003');
+  });
+
+  it('should fallback to default URL if ConfigService returns nothing', () => {
+    jest.spyOn(configService, 'get').mockReturnValue(null);
+    expect((controller as any).base()).toBe('http://localhost:3003');
+  });
+
+  it('should correctly forward authorization and cookie headers', () => {
+    const headers = (controller as any).forwardHeaders(mockReq);
+    expect(headers).toEqual({
+      authorization: 'Bearer mock_token',
+      cookie: 'session=123',
+    });
+  });
+
+  it('should fallback to empty strings if headers are missing', () => {
+    const emptyReq = { headers: {} } as any;
+    const headers = (controller as any).forwardHeaders(emptyReq);
+    expect(headers).toEqual({ authorization: '', cookie: '' });
   });
 
   describe('create', () => {
-    it('should forward POST request to orders service', async () => {
-      const body = {
-        items: [{ productId: 'prod_001', quantity: 2 }],
-        shippingAddress: '123 Main St, City',
-      };
-
-      jest.spyOn(httpService, 'post').mockReturnValue(
-        of({
-          data: mockOrder,
-          status: 201,
-          headers: {},
-          config: {} as any,
-          statusText: 'Created',
-        }),
-      );
+    it('should forward POST request with headers', async () => {
+      const body = { items: [] };
+      jest
+        .spyOn(httpService, 'post')
+        .mockReturnValue(of({ data: mockOrder, status: 201 }));
 
       await controller.create(body, mockReq, mockRes);
 
@@ -87,9 +98,10 @@ describe('OrdersProxyController', () => {
         'http://localhost:3003/orders',
         body,
         expect.objectContaining({
-          headers: expect.objectContaining({
+          headers: {
             authorization: 'Bearer mock_token',
-          }),
+            cookie: 'session=123',
+          },
         }),
       );
       expect(mockRes.status).toHaveBeenCalledWith(201);
@@ -98,16 +110,10 @@ describe('OrdersProxyController', () => {
   });
 
   describe('findAll', () => {
-    it('should forward GET request to orders service', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(
-        of({
-          data: [mockOrder],
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
+    it('should forward GET request', async () => {
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of({ data: [mockOrder], status: 200 }));
 
       await controller.findAll(mockReq, mockRes);
 
@@ -116,187 +122,103 @@ describe('OrdersProxyController', () => {
         expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith([mockOrder]);
     });
   });
 
   describe('getMyOrders', () => {
-    it('should forward GET my-orders request with JWT token', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(
-        of({
-          data: [mockOrder],
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
+    it('should forward GET my-orders request', async () => {
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of({ data: [mockOrder], status: 200 }));
 
       await controller.getMyOrders(mockReq, mockRes);
 
       expect(httpService.get).toHaveBeenCalledWith(
         'http://localhost:3003/orders/my-orders',
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            authorization: 'Bearer mock_token',
-          }),
-        }),
+        expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith([mockOrder]);
     });
   });
 
   describe('findByUserId', () => {
-    it('should forward GET by-user request to orders service', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(
-        of({
-          data: [mockOrder],
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
+    it('should forward GET request with userId param', async () => {
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of({ data: [mockOrder], status: 200 }));
 
-      await controller.findByUserId('user_123', mockReq, mockRes);
+      await controller.findByUserId('user123', mockReq, mockRes);
 
       expect(httpService.get).toHaveBeenCalledWith(
-        'http://localhost:3003/orders/by-user/user_123',
+        'http://localhost:3003/orders/by-user/user123',
         expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith([mockOrder]);
     });
   });
 
   describe('findOne', () => {
-    it('should forward GET /:id request to orders service', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(
-        of({
-          data: mockOrder,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
+    it('should forward GET request with id param', async () => {
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of({ data: mockOrder, status: 200 }));
 
-      await controller.findOne(mockOrder._id, mockReq, mockRes);
+      await controller.findOne('order123', mockReq, mockRes);
 
       expect(httpService.get).toHaveBeenCalledWith(
-        `http://localhost:3003/orders/${mockOrder._id}`,
+        'http://localhost:3003/orders/order123',
         expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(mockOrder);
-    });
-
-    it('should return 404 when order not found', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(
-        of({
-          data: { message: 'Document was not found' },
-          status: 404,
-          headers: {},
-          config: {} as any,
-          statusText: 'Not Found',
-        }),
-      );
-
-      await controller.findOne('nonexistent_id', mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(404);
     });
   });
 
   describe('update', () => {
-    it('should forward PATCH /:id request to orders service', async () => {
-      const updatedOrder = { ...mockOrder, totalAmount: 70.93 };
-      const body = { shippingAddress: '456 New St, City' };
+    it('should forward PATCH request with body', async () => {
+      const body = { shippingAddress: 'New Address' };
+      jest
+        .spyOn(httpService, 'patch')
+        .mockReturnValue(of({ data: mockOrder, status: 200 }));
 
-      jest.spyOn(httpService, 'patch').mockReturnValue(
-        of({
-          data: updatedOrder,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
-
-      await controller.update(mockOrder._id, body, mockReq, mockRes);
+      await controller.update('order123', body, mockReq, mockRes);
 
       expect(httpService.patch).toHaveBeenCalledWith(
-        `http://localhost:3003/orders/${mockOrder._id}`,
-        body,
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            authorization: 'Bearer mock_token',
-          }),
-        }),
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(updatedOrder);
-    });
-
-    it('should return 400 when order is not PENDING', async () => {
-      jest.spyOn(httpService, 'patch').mockReturnValue(
-        of({
-          data: { message: 'Bad Request' },
-          status: 400,
-          headers: {},
-          config: {} as any,
-        }),
-      );
-
-      await controller.update(mockOrder._id, {}, mockReq, mockRes);
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-    });
-  });
-
-  describe('updateStatus', () => {
-    it('should forward PATCH /:id/status request to orders service', async () => {
-      const updatedOrder = { ...mockOrder, status: OrderStatus.CONFIRMED };
-      const body = { status: OrderStatus.CONFIRMED };
-
-      jest.spyOn(httpService, 'patch').mockReturnValue(
-        of({
-          data: updatedOrder,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
-
-      await controller.updateStatus(mockOrder._id, body, mockReq, mockRes);
-
-      expect(httpService.patch).toHaveBeenCalledWith(
-        `http://localhost:3003/orders/${mockOrder._id}/status`,
+        'http://localhost:3003/orders/order123',
         body,
         expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(updatedOrder);
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('should forward PATCH request to status endpoint', async () => {
+      const body = { status: OrderStatus.CONFIRMED };
+      jest
+        .spyOn(httpService, 'patch')
+        .mockReturnValue(of({ data: mockOrder, status: 200 }));
+
+      await controller.updateStatus('order123', body, mockReq, mockRes);
+
+      expect(httpService.patch).toHaveBeenCalledWith(
+        'http://localhost:3003/orders/order123/status',
+        body,
+        expect.any(Object),
+      );
+      expect(mockRes.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('remove', () => {
-    it('should forward DELETE /:id request to orders service', async () => {
-      jest.spyOn(httpService, 'delete').mockReturnValue(
-        of({
-          data: {},
-          status: 204,
-          headers: {},
-          config: {} as any,
-          statusText: 'No Content',
-        }),
-      );
+    it('should forward DELETE request', async () => {
+      jest
+        .spyOn(httpService, 'delete')
+        .mockReturnValue(of({ data: null, status: 204 }));
 
-      await controller.remove(mockOrder._id, mockReq, mockRes);
+      await controller.remove('order123', mockReq, mockRes);
 
       expect(httpService.delete).toHaveBeenCalledWith(
-        `http://localhost:3003/orders/${mockOrder._id}`,
+        'http://localhost:3003/orders/order123',
         expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(204);

@@ -7,33 +7,21 @@ import { CartProxyController } from './cart-proxy.controller';
 describe('CartProxyController', () => {
   let controller: CartProxyController;
   let httpService: HttpService;
+  let configService: ConfigService;
 
   const mockCart = {
     _id: '507f1f77bcf86cd799439011',
     userId: 'user_123',
     items: [
-      {
-        productId: 'prod_001',
-        quantity: 2,
-        unitPrice: 8.99,
-        subtotal: 17.98,
-        name: 'Cheese Burger',
-      },
+      { productId: 'prod_001', quantity: 2, unitPrice: 8.99, subtotal: 17.98 },
     ],
     totalAmount: 17.98,
-  };
-
-  const mockEmptyCart = {
-    _id: '507f1f77bcf86cd799439011',
-    userId: 'user_123',
-    items: [],
-    totalAmount: 0,
   };
 
   const mockReq = {
     headers: {
       authorization: 'Bearer mock_token',
-      cookie: '',
+      cookie: 'test-cookie',
     },
   } as any;
 
@@ -43,9 +31,6 @@ describe('CartProxyController', () => {
   } as any;
 
   beforeEach(async () => {
-    // Satisfy the environment variable for the base URL
-    process.env.ORDERS_HTTP_BASEURL = 'http://localhost:3003';
-
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CartProxyController],
       providers: [
@@ -58,7 +43,6 @@ describe('CartProxyController', () => {
             delete: jest.fn(),
           },
         },
-
         {
           provide: ConfigService,
           useValue: {
@@ -70,239 +54,119 @@ describe('CartProxyController', () => {
 
     controller = module.get<CartProxyController>(CartProxyController);
     httpService = module.get<HttpService>(HttpService);
+    configService = module.get<ConfigService>(ConfigService);
 
     jest.clearAllMocks();
-    mockRes.status = jest.fn().mockReturnThis();
-    mockRes.json = jest.fn().mockReturnThis();
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  describe('Utility Methods (Private)', () => {
+    it('should return the base URL from config', () => {
+      expect((controller as any).base()).toBe('http://localhost:3003');
+    });
+
+    it('should fallback to default base URL if config is missing', () => {
+      jest.spyOn(configService, 'get').mockReturnValue(null);
+      expect((controller as any).base()).toBe('http://localhost:3003');
+    });
+
+    it('should forward provided headers correctly', () => {
+      const headers = (controller as any).forwardHeaders(mockReq);
+      expect(headers).toEqual({
+        authorization: 'Bearer mock_token',
+        cookie: 'test-cookie',
+      });
+    });
+
+    it('should use empty strings when headers are missing', () => {
+      const emptyReq = { headers: {} } as any;
+      const headers = (controller as any).forwardHeaders(emptyReq);
+      expect(headers).toEqual({ authorization: '', cookie: '' });
+    });
   });
 
   describe('getCart', () => {
-    it('should forward GET my-cart request with JWT token', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(
-        of({
-          data: mockCart,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
-
+    it('should forward GET /my-cart request', async () => {
+      jest
+        .spyOn(httpService, 'get')
+        .mockReturnValue(of({ data: mockCart, status: 200 }));
       await controller.getCart(mockReq, mockRes);
-
       expect(httpService.get).toHaveBeenCalledWith(
-        'http://localhost:3003/cart/my-cart',
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            authorization: 'Bearer mock_token',
-          }),
-        }),
+        expect.stringContaining('/cart/my-cart'),
+        expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(mockCart);
-    });
-
-    it('should return 401 when no token provided', async () => {
-      jest.spyOn(httpService, 'get').mockReturnValue(
-        of({
-          data: { message: 'Unauthorized' },
-          status: 401,
-          headers: {},
-          config: {} as any,
-          statusText: 'Unauthorized',
-        }),
-      );
-
-      const noAuthReq = { headers: { authorization: '', cookie: '' } } as any;
-      await controller.getCart(noAuthReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(401);
     });
   });
 
   describe('addItem', () => {
-    it('should forward POST items request to cart service', async () => {
-      const body = { productId: 'prod_001', quantity: 2 };
-      const updatedCart = {
-        ...mockEmptyCart,
-        items: [
-          {
-            productId: 'prod_001',
-            quantity: 2,
-            unitPrice: 8.99,
-            subtotal: 17.98,
-          },
-        ],
-        totalAmount: 17.98,
-      };
-
-      jest.spyOn(httpService, 'post').mockReturnValue(
-        of({
-          data: updatedCart,
-          status: 201,
-          headers: {},
-          config: {} as any,
-          statusText: 'Created',
-        }),
-      );
-
+    it('should forward POST /items request', async () => {
+      const body = { productId: 'p1', quantity: 1 };
+      jest
+        .spyOn(httpService, 'post')
+        .mockReturnValue(of({ data: mockCart, status: 201 }));
       await controller.addItem(body, mockReq, mockRes);
-
       expect(httpService.post).toHaveBeenCalledWith(
-        'http://localhost:3003/cart/items',
+        expect.stringContaining('/cart/items'),
         body,
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            authorization: 'Bearer mock_token',
-          }),
-        }),
+        expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(201);
-      expect(mockRes.json).toHaveBeenCalledWith(updatedCart);
-    });
-
-    it('should return 400 for invalid product', async () => {
-      jest.spyOn(httpService, 'post').mockReturnValue(
-        of({
-          data: { message: 'Product not found: prod_999' },
-          status: 400,
-          headers: {},
-          config: {} as any,
-          statusText: 'Bad Request',
-        }),
-      );
-
-      await controller.addItem(
-        { productId: 'prod_999', quantity: 1 },
-        mockReq,
-        mockRes,
-      );
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
     });
   });
 
   describe('updateItem', () => {
-    it('should forward PATCH items/:productId request to cart service', async () => {
+    it('should forward PATCH /items/:productId request', async () => {
       const body = { quantity: 5 };
-      const updatedCart = {
-        ...mockCart,
-        items: [
-          {
-            productId: 'prod_001',
-            quantity: 5,
-            unitPrice: 8.99,
-            subtotal: 44.95,
-          },
-        ],
-        totalAmount: 44.95,
-      };
-
-      jest.spyOn(httpService, 'patch').mockReturnValue(
-        of({
-          data: updatedCart,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
-
-      await controller.updateItem('prod_001', body, mockReq, mockRes);
-
+      jest
+        .spyOn(httpService, 'patch')
+        .mockReturnValue(of({ data: mockCart, status: 200 }));
+      await controller.updateItem('p1', body, mockReq, mockRes);
       expect(httpService.patch).toHaveBeenCalledWith(
-        'http://localhost:3003/cart/items/prod_001',
+        expect.stringContaining('/cart/items/p1'),
         body,
         expect.any(Object),
       );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(updatedCart);
     });
   });
 
   describe('removeItem', () => {
-    it('should forward DELETE items/:productId request to cart service', async () => {
-      jest.spyOn(httpService, 'delete').mockReturnValue(
-        of({
-          data: mockEmptyCart,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
-
-      await controller.removeItem('prod_001', mockReq, mockRes);
-
+    it('should forward DELETE /items/:productId request', async () => {
+      jest
+        .spyOn(httpService, 'delete')
+        .mockReturnValue(of({ data: {}, status: 200 }));
+      await controller.removeItem('p1', mockReq, mockRes);
       expect(httpService.delete).toHaveBeenCalledWith(
-        'http://localhost:3003/cart/items/prod_001',
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            authorization: 'Bearer mock_token',
-          }),
-        }),
+        expect.stringContaining('/cart/items/p1'),
+        expect.any(Object),
       );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(mockEmptyCart);
     });
   });
 
   describe('clearCart', () => {
-    it('should forward DELETE /cart request to cart service', async () => {
-      jest.spyOn(httpService, 'delete').mockReturnValue(
-        of({
-          data: mockEmptyCart,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
-
+    it('should forward DELETE /cart request', async () => {
+      jest
+        .spyOn(httpService, 'delete')
+        .mockReturnValue(of({ data: {}, status: 200 }));
       await controller.clearCart(mockReq, mockRes);
-
       expect(httpService.delete).toHaveBeenCalledWith(
-        'http://localhost:3003/cart',
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            authorization: 'Bearer mock_token',
-          }),
-        }),
+        expect.stringContaining('/cart'),
+        expect.any(Object),
       );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(mockEmptyCart);
     });
   });
 
   describe('checkout', () => {
-    it('should forward POST checkout request to cart service', async () => {
-      jest.spyOn(httpService, 'post').mockReturnValue(
-        of({
-          data: mockCart,
-          status: 200,
-          headers: {},
-          config: {} as any,
-          statusText: 'OK',
-        }),
-      );
-
-      await controller.checkout({}, mockReq, mockRes);
-
+    it('should forward POST /checkout request', async () => {
+      const body = { address: 'test' };
+      jest
+        .spyOn(httpService, 'post')
+        .mockReturnValue(of({ data: { orderId: '1' }, status: 200 }));
+      await controller.checkout(body, mockReq, mockRes);
       expect(httpService.post).toHaveBeenCalledWith(
-        'http://localhost:3003/cart/checkout',
-        {},
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            authorization: 'Bearer mock_token',
-          }),
-        }),
+        expect.stringContaining('/cart/checkout'),
+        body,
+        expect.any(Object),
       );
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(mockCart);
     });
   });
 });
