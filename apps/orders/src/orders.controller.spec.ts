@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException } from '@nestjs/common';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { OrderStatus } from './schemas/order.schema';
@@ -8,6 +7,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RolesGuard } from './guards/roles.guard';
 import { Role } from './decorators/roles.decorator';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 describe('OrdersController', () => {
   let controller: OrdersController;
@@ -32,15 +32,6 @@ describe('OrdersController', () => {
     },
   };
 
-  // ← Admin user mock request
-  const mockAdminRequest = {
-    user: {
-      userId: 'admin_123',
-      sub: 'admin_123',
-      roles: [Role.ADMIN],
-    },
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OrdersController],
@@ -55,7 +46,12 @@ describe('OrdersController', () => {
             update: jest.fn().mockResolvedValue({
               ...mockOrder,
               items: [
-                { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
+                {
+                  productId: 'prod_001',
+                  quantity: 5,
+                  unitPrice: 8.99,
+                  subtotal: 44.95,
+                },
               ],
               totalAmount: 44.95,
             }),
@@ -68,7 +64,7 @@ describe('OrdersController', () => {
         },
       ],
     })
-      .overrideGuard(require('./guards/jwt-auth.guard').JwtAuthGuard)
+      .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard) // ← override RolesGuard for most tests
       .useValue({ canActivate: () => true })
@@ -181,7 +177,12 @@ describe('OrdersController', () => {
       expect(result).toEqual({
         ...mockOrder,
         items: [
-          { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
+          {
+            productId: 'prod_001',
+            quantity: 5,
+            unitPrice: 8.99,
+            subtotal: 44.95,
+          },
         ],
         totalAmount: 44.95,
       });
