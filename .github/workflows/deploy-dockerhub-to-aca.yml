@@ -19,6 +19,10 @@ jobs:
             dockerfile: apps/api-gateway/Dockerfile
             image: quickbite-api-gateway
             appNameSecret: GATEWAY_APP_NAME
+          - name: orders
+            dockerfile: apps/orders/Dockerfile
+            image: quickbite-orders
+            appNameSecret: ORDERS_APP_NAME
           - name: products
             dockerfile: apps/products/Dockerfile
             image: quickbite-products

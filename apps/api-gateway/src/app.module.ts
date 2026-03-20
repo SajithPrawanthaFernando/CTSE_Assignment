@@ -9,6 +9,8 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 import { UsersProxyController } from './users-proxy.controller';
 import { AuthProxyController } from './auth-proxy.controller';
+import { OrdersProxyController } from './orders-proxy.controller';
+import { CartProxyController } from './cart-proxy.controller';
 import { ProductsProxyController } from './products-proxy.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -62,7 +64,7 @@ export class GatewayJwtStrategy extends PassportStrategy(Strategy) {
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
   ],
-  controllers: [AuthProxyController, UsersProxyController, ProductsProxyController],
+  controllers: [AuthProxyController, UsersProxyController, OrdersProxyController, CartProxyController,ProductsProxyController],
   providers: [
     GatewayJwtStrategy, // ← use inline strategy, not auth service's JwtStrategy
     {
