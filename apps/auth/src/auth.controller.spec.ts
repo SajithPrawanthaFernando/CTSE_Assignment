@@ -8,6 +8,7 @@ describe('AuthController', () => {
   const authServiceMock = {
     login: jest.fn(),
     logout: jest.fn(),
+    validateToken: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -39,12 +40,18 @@ describe('AuthController', () => {
     });
   });
 
-  it('should return data.user for authenticate message pattern', async () => {
-    const result = await controller.authenticate({
-      user: { id: '123', email: 'a@b.com' },
-    });
+  it('should call validateToken and return user data for authenticate message pattern', async () => {
+    const mockUser = { id: '123', email: 'a@b.com' };
+    const mockPayload = { Authentication: 'mock-jwt-token' };
 
-    expect(result).toEqual({ id: '123', email: 'a@b.com' });
+    authServiceMock.validateToken.mockResolvedValueOnce(mockUser);
+
+    const result = await controller.authenticate(mockPayload);
+
+    expect(authServiceMock.validateToken).toHaveBeenCalledWith(
+      'mock-jwt-token',
+    );
+    expect(result).toEqual(mockUser);
   });
 
   it('should call AuthService.logout and return its result', async () => {

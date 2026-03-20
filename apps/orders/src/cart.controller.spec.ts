@@ -2,9 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { OrderStatus } from './schemas/order.schema';
-import { RolesGuard } from './guards/roles.guard';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { Role } from './decorators/roles.decorator';
+import { RolesGuard } from '@app/common/auth/roles.guard';
+import { JwtAuthGuard } from '@app/common';
 
 describe('CartController', () => {
   let controller: CartController;
@@ -53,7 +52,7 @@ describe('CartController', () => {
     user: {
       userId: 'user_123',
       sub: 'user_123',
-      roles: [Role.USER], // ← added roles
+      roles: ['user'], // ← added roles
     },
   };
 
@@ -119,7 +118,7 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
+      const reqWithSub = { user: { sub: 'user_123', roles: ['user'] } };
       const result = await controller.getCart(reqWithSub as any);
       expect(result).toEqual(mockCart);
       expect(service.getCart).toHaveBeenCalledWith('user_123');
@@ -149,7 +148,7 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
+      const reqWithSub = { user: { sub: 'user_123', roles: ['user'] } };
       const dto = { productId: 'prod_001', quantity: 1 };
       await controller.addItem(reqWithSub as any, dto);
       expect(service.addItem).toHaveBeenCalledWith('user_123', dto);
@@ -234,7 +233,7 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
+      const reqWithSub = { user: { sub: 'user_123', roles: ['user'] } };
       await controller.clearCart(reqWithSub as any);
       expect(service.clearCart).toHaveBeenCalledWith('user_123');
     });
@@ -277,7 +276,7 @@ describe('CartController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
+      const reqWithSub = { user: { sub: 'user_123', roles: ['user'] } };
       const body = { shippingAddress: '123 Main St' };
       await controller.checkout(reqWithSub as any, body);
 

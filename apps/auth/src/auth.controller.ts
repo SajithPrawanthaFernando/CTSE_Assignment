@@ -22,10 +22,10 @@ export class AuthController {
     return result;
   }
 
-  @UseGuards(JwtAuthGuard)
   @MessagePattern('authenticate')
   async authenticate(@Payload() data: any) {
-    return data.user;
+    // data.Authentication is the key we used in the Products JwtAuthGuard
+    return this.authService.validateToken(data.Authentication);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60 * 1000 } })

@@ -21,7 +21,9 @@ jest.mock('@nestjs/swagger', () => ({
   })),
 }));
 
-jest.mock('./products.module', () => ({ ProductsModule: class ProductsModule {} }));
+jest.mock('./products.module', () => ({
+  ProductsModule: class ProductsModule {},
+}));
 
 // ─── Shared state populated in the single top-level beforeAll ─────────────────
 
@@ -61,11 +63,14 @@ beforeAll(async () => {
     useGlobalFilters: jest.fn(),
     enableCors: jest.fn(),
     useGlobalPipes: jest.fn(),
+    use: jest.fn(), // <--- ADD THIS LINE
     listen: jest.fn(),
   };
 
   let resolveListen: any;
-  const listenDone = new Promise(r => { resolveListen = r; });
+  const listenDone = new Promise((r) => {
+    resolveListen = r;
+  });
 
   (appMock.listen as any).mockImplementationOnce(() => {
     resolveListen();
@@ -81,8 +86,12 @@ beforeAll(async () => {
   realFilter = appMock.useGlobalFilters.mock.calls[0][0];
 
   // Spy on the real filter's logger so all catch() calls are tracked
-  loggerErrorSpy = jest.spyOn(realFilter['logger'], 'error').mockImplementation(() => {});
-  loggerDebugSpy = jest.spyOn(realFilter['logger'], 'debug').mockImplementation(() => {});
+  loggerErrorSpy = jest
+    .spyOn(realFilter['logger'], 'error')
+    .mockImplementation(() => {});
+  loggerDebugSpy = jest
+    .spyOn(realFilter['logger'], 'debug')
+    .mockImplementation(() => {});
 });
 
 afterAll(() => {
@@ -140,7 +149,11 @@ describe('products main.ts – bootstrap', () => {
   });
 
   it('should call SwaggerModule.setup with path "api"', () => {
-    expect(SwaggerModule.setup).toHaveBeenCalledWith('api', appMock, expect.anything());
+    expect(SwaggerModule.setup).toHaveBeenCalledWith(
+      'api',
+      appMock,
+      expect.anything(),
+    );
   });
 
   it('should build swagger document with title "Product Catalog API"', () => {
@@ -193,7 +206,9 @@ describe('AllExceptionsFilter – getStatus branch', () => {
   it('should not include error hint when status is not 500', () => {
     const res = makeRes();
     realFilter.catch({ getStatus: () => 404 }, makeHost(res, makeReq()));
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: undefined }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: undefined }),
+    );
   });
 });
 
@@ -223,7 +238,9 @@ describe('AllExceptionsFilter – plain Error branch', () => {
   it('should include statusCode in the response body', () => {
     const res = makeRes();
     realFilter.catch(new Error('x'), makeHost(res, makeReq()));
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 500 }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ statusCode: 500 }),
+    );
   });
 });
 
@@ -257,7 +274,10 @@ describe('AllExceptionsFilter – validation errors branch', () => {
       makeHost(res, makeReq()),
     );
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Validation failed', errors: ['required', 'invalid'] }),
+      expect.objectContaining({
+        message: 'Validation failed',
+        errors: ['required', 'invalid'],
+      }),
     );
   });
 
@@ -278,15 +298,22 @@ describe('AllExceptionsFilter – validation errors branch', () => {
       { getStatus: () => 400, response: { message: 'single string' } },
       makeHost(res, makeReq()),
     );
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ errors: undefined }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ errors: undefined }),
+    );
   });
 });
 
 describe('AllExceptionsFilter – logger branch', () => {
   it('should call logger.error with method and url', () => {
     const res = makeRes();
-    realFilter.catch(new Error('fail'), makeHost(res, makeReq('POST', '/products')));
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('POST'));
+    realFilter.catch(
+      new Error('fail'),
+      makeHost(res, makeReq('POST', '/products')),
+    );
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('POST'),
+    );
   });
 
   it('should call logger.debug with stack trace for Error instances', () => {

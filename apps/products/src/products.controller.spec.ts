@@ -4,6 +4,8 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { AUTH_SERVICE } from '@app/common'; // Import your constant
+import { Reflector } from '@nestjs/core';
 
 describe('ProductsController', () => {
   let controller: ProductsController;
@@ -34,7 +36,8 @@ describe('ProductsController', () => {
       price: 11.99,
       category: 'Pizza',
       tags: ['pizza', 'vegetarian', 'italian'],
-      image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400',
+      image:
+        'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400',
       rating: 4.6,
     },
   ];
@@ -53,10 +56,28 @@ describe('ProductsController', () => {
 
     const moduleRef = await Test.createTestingModule({
       controllers: [ProductsController],
-      providers: [{ provide: ProductsService, useValue: productsServiceMock }],
+      providers: [
+        { provide: ProductsService, useValue: productsServiceMock },
+        // Fix: Mock the AUTH_SERVICE TCP Client
+        {
+          provide: AUTH_SERVICE,
+          useValue: {
+            send: jest.fn(),
+            emit: jest.fn(),
+          },
+        },
+        // Fix: Provide Reflector (needed for RolesGuards/JwtGuards)
+        {
+          provide: Reflector,
+          useValue: {
+            get: jest.fn(),
+            getAllAndOverride: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
-    controller = moduleRef.get(ProductsController);
+    controller = moduleRef.get<ProductsController>(ProductsController);
   });
 
   describe('create', () => {
@@ -84,7 +105,8 @@ describe('ProductsController', () => {
         category: 'Burgers',
         active: true,
         tags: ['burger', 'spicy', 'jalapeno'],
-        image: 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400',
+        image:
+          'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400',
         rating: 4.4,
       };
 
@@ -106,7 +128,7 @@ describe('ProductsController', () => {
       productsServiceMock.create.mockRejectedValueOnce(error);
 
       await expect(controller.create(createDto)).rejects.toThrow(
-        'Database error'
+        'Database error',
       );
     });
   });
@@ -240,11 +262,11 @@ describe('ProductsController', () => {
       const productId = new Types.ObjectId().toString();
 
       productsServiceMock.findOne.mockRejectedValueOnce(
-        new Error('Product not found')
+        new Error('Product not found'),
       );
 
       await expect(controller.findOne(productId)).rejects.toThrow(
-        'Product not found'
+        'Product not found',
       );
     });
 
@@ -252,11 +274,11 @@ describe('ProductsController', () => {
       const invalidId = 'invalid-id';
 
       productsServiceMock.findOne.mockRejectedValueOnce(
-        new Error('Invalid product ID')
+        new Error('Invalid product ID'),
       );
 
       await expect(controller.findOne(invalidId)).rejects.toThrow(
-        'Invalid product ID'
+        'Invalid product ID',
       );
     });
   });
@@ -273,7 +295,7 @@ describe('ProductsController', () => {
 
       expect(productsServiceMock.update).toHaveBeenCalledWith(
         productId,
-        updateDto
+        updateDto,
       );
       expect(result.price).toBe(10.99);
     });
@@ -289,7 +311,7 @@ describe('ProductsController', () => {
 
       expect(productsServiceMock.update).toHaveBeenCalledWith(
         productId,
-        updateDto
+        updateDto,
       );
       expect(result.stock).toBe(200);
     });
@@ -308,10 +330,10 @@ describe('ProductsController', () => {
 
       expect(productsServiceMock.update).toHaveBeenCalledWith(
         productId,
-        updateDto
+        updateDto,
       );
       expect(result.description).toBe(
-        'Now with extra cheese and fresh daily baked bun'
+        'Now with extra cheese and fresh daily baked bun',
       );
     });
 
@@ -320,11 +342,11 @@ describe('ProductsController', () => {
       const updateDto: UpdateProductDto = { price: 10.99 };
 
       productsServiceMock.update.mockRejectedValueOnce(
-        new Error('Product not found')
+        new Error('Product not found'),
       );
 
       await expect(controller.update(productId, updateDto)).rejects.toThrow(
-        'Product not found'
+        'Product not found',
       );
     });
   });
@@ -344,11 +366,11 @@ describe('ProductsController', () => {
       const productId = mockProduct._id.toString();
 
       productsServiceMock.remove.mockRejectedValueOnce(
-        new Error('Product not found')
+        new Error('Product not found'),
       );
 
       await expect(controller.remove(productId)).rejects.toThrow(
-        'Product not found'
+        'Product not found',
       );
     });
 
@@ -356,11 +378,11 @@ describe('ProductsController', () => {
       const productId = new Types.ObjectId().toString();
 
       productsServiceMock.remove.mockRejectedValueOnce(
-        new Error('Product not found')
+        new Error('Product not found'),
       );
 
       await expect(controller.remove(productId)).rejects.toThrow(
-        'Product not found'
+        'Product not found',
       );
     });
   });

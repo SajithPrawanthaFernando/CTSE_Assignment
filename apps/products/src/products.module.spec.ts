@@ -5,8 +5,8 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { ProductsRepository } from './products.repository';
 import { ProductDocument } from './schemas/product.schema';
-
-// ─── Shared mock model ────────────────────────────────────────────────────────
+import { AUTH_SERVICE } from '@app/common';
+import { Reflector } from '@nestjs/core';
 
 const mockProductModel = {
   find: jest.fn(),
@@ -18,14 +18,10 @@ const mockProductModel = {
   exec: jest.fn(),
 };
 
-// ─── Mock Mongoose connection (prevents connection.close is not a function) ───
-
 const mockConnection = {
   close: jest.fn().mockResolvedValue(undefined),
   model: jest.fn(),
 };
-
-// ─── Suite ────────────────────────────────────────────────────────────────────
 
 describe('ProductsModule (unit)', () => {
   let moduleRef: TestingModule;
@@ -48,10 +44,27 @@ describe('ProductsModule (unit)', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockImplementation((key: string) => {
-              if (key === 'MONGODB_URI') return 'mongodb://localhost:27017/products';
+              if (key === 'MONGODB_URI')
+                return 'mongodb://localhost:27017/products';
               if (key === 'PORT') return 3002;
+              if (key === 'AUTH_HOST') return 'localhost';
+              if (key === 'AUTH_PORT') return 3001;
               return undefined;
             }),
+          },
+        },
+        {
+          provide: AUTH_SERVICE,
+          useValue: {
+            send: jest.fn(),
+            emit: jest.fn(),
+          },
+        },
+        {
+          provide: Reflector,
+          useValue: {
+            get: jest.fn(),
+            getAllAndOverride: jest.fn(),
           },
         },
       ],
@@ -59,24 +72,20 @@ describe('ProductsModule (unit)', () => {
   });
 
   afterEach(async () => {
-    await moduleRef.close();
+    if (moduleRef) {
+      await moduleRef.close();
+    }
   });
-
-  // ─── Module compiles ───────────────────────────────────────────────────────
 
   it('should compile without a real database connection', () => {
     expect(moduleRef).toBeDefined();
   });
-
-  // ─── Controllers ──────────────────────────────────────────────────────────
 
   it('should resolve ProductsController', () => {
     const controller = moduleRef.get<ProductsController>(ProductsController);
     expect(controller).toBeDefined();
     expect(controller).toBeInstanceOf(ProductsController);
   });
-
-  // ─── Providers ────────────────────────────────────────────────────────────
 
   it('should resolve ProductsService', () => {
     const service = moduleRef.get<ProductsService>(ProductsService);
@@ -90,8 +99,6 @@ describe('ProductsModule (unit)', () => {
     expect(repo).toBeInstanceOf(ProductsRepository);
   });
 
-  // ─── Config defaults ───────────────────────────────────────────────────────
-
   it('should use default PORT 3002 when PORT is not set', () => {
     const config = moduleRef.get<ConfigService>(ConfigService);
     expect(config.get('PORT')).toBe(3002);
@@ -99,15 +106,17 @@ describe('ProductsModule (unit)', () => {
 
   it('should use default MONGODB_URI when not set', () => {
     const config = moduleRef.get<ConfigService>(ConfigService);
-    expect(config.get('MONGODB_URI')).toBe('mongodb://localhost:27017/products');
+    expect(config.get('MONGODB_URI')).toBe(
+      'mongodb://localhost:27017/products',
+    );
   });
-
-  // ─── MongooseModule.forRootAsync factory ──────────────────────────────────
 
   it('should build mongoose options with MONGODB_URI from ConfigService', () => {
     const config = moduleRef.get<ConfigService>(ConfigService);
     const factory = (cfg: ConfigService) => ({ uri: cfg.get('MONGODB_URI') });
-    expect(factory(config)).toEqual({ uri: 'mongodb://localhost:27017/products' });
+    expect(factory(config)).toEqual({
+      uri: 'mongodb://localhost:27017/products',
+    });
   });
 
   it('should return undefined uri when MONGODB_URI is not configured', () => {
@@ -115,8 +124,6 @@ describe('ProductsModule (unit)', () => {
     const factory = (cfg: ConfigService) => ({ uri: cfg.get('MONGODB_URI') });
     expect(factory(emptyConfig)).toEqual({ uri: undefined });
   });
-
-  // ─── Dependency wiring ─────────────────────────────────────────────────────
 
   it('should inject ProductsRepository into ProductsService', () => {
     const service = moduleRef.get<ProductsService>(ProductsService);

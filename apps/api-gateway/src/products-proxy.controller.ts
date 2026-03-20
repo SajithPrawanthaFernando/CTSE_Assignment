@@ -1,12 +1,20 @@
 import {
-  Body, Controller, Delete, Get, Param,
-  Patch, Post, Query, Req, Res, UseGuards, Logger,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  Logger,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { JwtAuthGuard } from '../../auth/src/guards/jwt-auth.guard';
 
 @Controller('products')
 export class ProductsProxyController {
@@ -24,10 +32,14 @@ export class ProductsProxyController {
     );
   }
 
+  /**
+   * Correctly extracts and forwards critical headers to the microservice.
+   */
   private forwardHeaders(req: Request) {
     return {
       cookie: req.headers.cookie || '',
       authorization: req.headers.authorization || '',
+      authentication: req.headers.authentication || '',
       'content-type': req.headers['content-type'] || 'application/json',
     };
   }
@@ -43,33 +55,31 @@ export class ProductsProxyController {
       );
       return res.status(502).json({
         statusCode: 502,
-        message: 'Products service is unavailable. Please try again later.',
+        message: 'Products service is unavailable.',
       });
     }
-    this.logger.error(
-      `[${route}] Unexpected error: ${error?.message}`,
-      error?.stack,
-    );
+    this.logger.error(`[${route}] Unexpected error: ${error?.message}`);
     return res.status(500).json({
       statusCode: 500,
       message: 'Internal gateway error.',
     });
   }
 
-  // ─── Public routes (no auth required) ────────────────────────────────────
+  // ─── Public routes (Now correctly forwarding headers) ─────────────────────
 
   @Get()
   async findAll(
     @Query() query: Record<string, string>,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
       const url = `${this.base()}/products`;
-      this.logger.log(`[findAll] GET ${url}`);
+      this.logger.log(`[findAll] Proxying to: ${url}`);
       const response = await lastValueFrom(
         this.http.get(url, {
           params: query,
-          headers: this.forwardHeaders({ headers: {} } as Request),
+          headers: this.forwardHeaders(req), // FIXED: Pass real 'req'
           validateStatus: () => true,
         }),
       );
@@ -82,15 +92,15 @@ export class ProductsProxyController {
   @Get('bulk')
   async findByIds(
     @Query() query: Record<string, string>,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
       const url = `${this.base()}/products/bulk`;
-      this.logger.log(`[findByIds] GET ${url}`);
       const response = await lastValueFrom(
         this.http.get(url, {
           params: query,
-          headers: this.forwardHeaders({ headers: {} } as Request),
+          headers: this.forwardHeaders(req), // FIXED: Pass real 'req'
           validateStatus: () => true,
         }),
       );
@@ -101,12 +111,16 @@ export class ProductsProxyController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Res() res: Response) {
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     try {
       const url = `${this.base()}/products/${id}`;
-      this.logger.log(`[findOne] GET ${url}`);
       const response = await lastValueFrom(
         this.http.get(url, {
+          headers: this.forwardHeaders(req), // FIXED: Added header forwarding
           validateStatus: () => true,
         }),
       );
@@ -119,7 +133,6 @@ export class ProductsProxyController {
   // ─── Protected routes (JWT required) ─────────────────────────────────────
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   async create(
     @Body() body: unknown,
     @Req() req: Request,
@@ -127,7 +140,6 @@ export class ProductsProxyController {
   ) {
     try {
       const url = `${this.base()}/products`;
-      this.logger.log(`[create] POST ${url}`);
       const response = await lastValueFrom(
         this.http.post(url, body, {
           headers: this.forwardHeaders(req),
@@ -141,7 +153,6 @@ export class ProductsProxyController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
     @Body() body: unknown,
@@ -150,7 +161,6 @@ export class ProductsProxyController {
   ) {
     try {
       const url = `${this.base()}/products/${id}`;
-      this.logger.log(`[update] PATCH ${url}`);
       const response = await lastValueFrom(
         this.http.patch(url, body, {
           headers: this.forwardHeaders(req),
@@ -164,11 +174,13 @@ export class ProductsProxyController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  async remove(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+  async remove(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     try {
       const url = `${this.base()}/products/${id}`;
-      this.logger.log(`[remove] DELETE ${url}`);
       const response = await lastValueFrom(
         this.http.delete(url, {
           headers: this.forwardHeaders(req),

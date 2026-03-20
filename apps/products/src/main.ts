@@ -1,9 +1,17 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger, ExceptionFilter, Catch, ArgumentsHost, HttpStatus } from '@nestjs/common';
+import {
+  ValidationPipe,
+  Logger,
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpStatus,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { ProductsModule } from './products.module';
+import * as cookieParser from 'cookie-parser';
 
 @Catch()
 class AllExceptionsFilter implements ExceptionFilter {
@@ -13,15 +21,20 @@ class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
     const req = ctx.getRequest<Request>();
-    const status = exception && typeof (exception as any).getStatus === 'function'
-      ? (exception as any).getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
-    
-    let message = exception instanceof Error ? exception.message : 'Internal server error';
+    const status =
+      exception && typeof (exception as any).getStatus === 'function'
+        ? (exception as any).getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    let message =
+      exception instanceof Error ? exception.message : 'Internal server error';
     let validationErrors: any = undefined;
 
     // Extract validation errors if present
-    if ((exception as any)?.response?.message && Array.isArray((exception as any).response.message)) {
+    if (
+      (exception as any)?.response?.message &&
+      Array.isArray((exception as any).response.message)
+    ) {
       validationErrors = (exception as any).response.message;
       message = 'Validation failed';
     }
@@ -35,7 +48,10 @@ class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       message,
       errors: validationErrors,
-      error: status === 500 ? 'Check server logs; often caused by MongoDB not running or wrong MONGODB_URI.' : undefined,
+      error:
+        status === 500
+          ? 'Check server logs; often caused by MongoDB not running or wrong MONGODB_URI.'
+          : undefined,
     });
   }
 }
@@ -43,7 +59,7 @@ class AllExceptionsFilter implements ExceptionFilter {
 async function bootstrap() {
   const app = await NestFactory.create(ProductsModule);
   const configService = app.get(ConfigService);
-
+  app.use(cookieParser());
   app.useGlobalFilters(new AllExceptionsFilter());
 
   app.enableCors({
@@ -74,6 +90,7 @@ async function bootstrap() {
 
   const port = configService.get<number>('PORT') ?? 3002;
   await app.listen(port);
+
   console.log(`Product Catalog service listening on http://localhost:${port}`);
   console.log(`Swagger UI: http://localhost:${port}`);
 }
