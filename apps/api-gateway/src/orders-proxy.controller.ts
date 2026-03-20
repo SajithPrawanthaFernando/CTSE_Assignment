@@ -15,13 +15,19 @@ import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { Request, Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('orders')
 export class OrdersProxyController {
-  constructor(private readonly http: HttpService) {}
+  constructor(
+    private readonly http: HttpService,
+    private readonly config: ConfigService,
+  ) {}
 
-  private base() {
-    return process.env.ORDERS_HTTP_BASEURL;
+  private base(): string {
+    return (
+      this.config.get<string>('ORDERS_HTTP_BASEURL') || 'http://localhost:3003'
+    );
   }
 
   private forwardHeaders(req: Request) {

@@ -6,7 +6,8 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { ProductsRepository } from './products.repository';
 import { ProductDocument, ProductSchema } from './schemas/product.schema';
-import { HealthModule } from '@app/common';
+import { HealthModule, AUTH_SERVICE } from '@app/common';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -18,8 +19,23 @@ import { HealthModule } from '@app/common';
         MONGODB_URI: Joi.string().default('mongodb://localhost:27017/products'),
       }),
     }),
+    ClientsModule.registerAsync([
+      {
+        name: AUTH_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: '127.0.0.1',
+            port: Number(configService.get('AUTH_PORT')),
+          },
+        }),
+        inject: [ConfigService],
+      },
+    ]),
     MongooseModule.forRootAsync({
-      useFactory: (config: ConfigService) => ({ uri: config.get('MONGODB_URI') }),
+      useFactory: (config: ConfigService) => ({
+        uri: config.get('MONGODB_URI'),
+      }),
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([

@@ -12,15 +12,20 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('cart')
 export class CartProxyController {
-  constructor(private readonly http: HttpService) {}
+  constructor(
+    private readonly http: HttpService,
+    private readonly config: ConfigService,
+  ) {}
 
-  private base() {
-    return process.env.ORDERS_HTTP_BASEURL;
+  private base(): string {
+    return (
+      this.config.get<string>('CART_HTTP_BASEURL') || 'http://localhost:3003'
+    );
   }
-
   private forwardHeaders(req: Request) {
     return {
       cookie: req.headers.cookie || '',

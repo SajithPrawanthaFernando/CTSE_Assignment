@@ -5,9 +5,8 @@ import { OrderStatus } from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { RolesGuard } from './guards/roles.guard';
-import { Role } from './decorators/roles.decorator';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@app/common';
+import { RolesGuard } from '@app/common/auth/roles.guard';
 
 describe('OrdersController', () => {
   let controller: OrdersController;
@@ -28,7 +27,7 @@ describe('OrdersController', () => {
     user: {
       userId: 'user_123',
       sub: 'user_123',
-      roles: [Role.USER],
+      roles: ['user'],
     },
   };
 
@@ -109,7 +108,7 @@ describe('OrdersController', () => {
         'roles',
         OrdersController.prototype.findAll,
       );
-      expect(roles).toContain(Role.ADMIN);
+      expect(roles).toContain('admin');
     });
   });
 
@@ -121,7 +120,7 @@ describe('OrdersController', () => {
     });
 
     it('should use sub if userId not present in token', async () => {
-      const reqWithSub = { user: { sub: 'user_123', roles: [Role.USER] } };
+      const reqWithSub = { user: { sub: 'user_123', roles: ['user'] } };
       const result = await controller.getMyOrders(reqWithSub as any);
       expect(result).toEqual([mockOrder]);
       expect(service.findByUserId).toHaveBeenCalledWith('user_123');
@@ -149,7 +148,7 @@ describe('OrdersController', () => {
         'roles',
         OrdersController.prototype.findByUserId,
       );
-      expect(roles).toContain(Role.ADMIN);
+      expect(roles).toContain('admin');
     });
   });
 
@@ -239,7 +238,7 @@ describe('OrdersController', () => {
         'roles',
         OrdersController.prototype.updateStatus,
       );
-      expect(roles).toContain(Role.ADMIN);
+      expect(roles).toContain('admin');
     });
   });
 

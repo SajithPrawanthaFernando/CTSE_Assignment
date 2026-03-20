@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { UsersService } from './users/users.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -9,12 +10,18 @@ describe('AuthService', () => {
   const configServiceMock = {
     get: jest.fn((key: string) => {
       if (key === 'JWT_EXPIRATION') return 3600;
+      if (key === 'JWT_SECRET') return 'test-secret';
       return undefined;
     }),
   };
 
   const jwtServiceMock = {
     sign: jest.fn(() => 'mock-jwt-token'),
+    verify: jest.fn(),
+  };
+
+  const usersServiceMock = {
+    getUser: jest.fn(),
   };
 
   const responseMock = () => ({
@@ -30,17 +37,22 @@ describe('AuthService', () => {
         AuthService,
         { provide: ConfigService, useValue: configServiceMock },
         { provide: JwtService, useValue: jwtServiceMock },
+        { provide: UsersService, useValue: usersServiceMock },
       ],
     }).compile();
 
     service = moduleRef.get(AuthService);
   });
 
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
   it('should set Authentication cookie and return token + user payload on login', async () => {
     const res = responseMock() as any;
 
     const user: any = {
-      _id: { toHexString: () => 'user-id-hex' },
+      _id: 'user-id-hex',
       email: 'test@example.com',
       roles: ['user'],
       fullname: 'Test User',
@@ -83,5 +95,42 @@ describe('AuthService', () => {
 
     expect(res.clearCookie).toHaveBeenCalledWith('Authentication');
     expect(result).toEqual({ message: 'Logged out successfully' });
+  });
+
+  describe('validateToken', () => {
+    it('should verify token and return user if valid', async () => {
+      const mockPayload = { userId: '123' };
+      const mockUser = { _id: '123', email: 'test@test.com' };
+
+      jwtServiceMock.verify.mockReturnValue(mockPayload);
+      usersServiceMock.getUser.mockResolvedValue(mockUser);
+
+      const result = await service.validateToken('valid-token');
+
+      expect(jwtServiceMock.verify).toHaveBeenCalledWith('valid-token', {
+        secret: 'test-secret',
+      });
+
+      expect(usersServiceMock.getUser).toHaveBeenCalledWith({ _id: '123' });
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should throw error if token is invalid', async () => {
+      jwtServiceMock.verify.mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      await expect(service.validateToken('invalid-token')).rejects.toThrow();
+    });
+
+    it('should throw error if user is not found', async () => {
+      const mockPayload = { userId: '404' };
+      jwtServiceMock.verify.mockReturnValue(mockPayload);
+      usersServiceMock.getUser.mockResolvedValue(null);
+
+      await expect(service.validateToken('valid-token')).rejects.toThrow(
+        'User not found',
+      );
+    });
   });
 });

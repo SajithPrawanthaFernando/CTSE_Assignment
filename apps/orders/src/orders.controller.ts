@@ -11,24 +11,31 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';       // ← added
-import { Roles, Role } from './decorators/roles.decorator'; // ← added
+import { JwtAuthGuard, Roles } from '@app/common';
+import { RolesGuard } from '@app/common/auth/roles.guard';
 
 @ApiTags('orders')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard) // ← added RolesGuard
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new order (validates products via Products service)' })
+  @ApiOperation({
+    summary: 'Create a new order (validates products via Products service)',
+  })
   @ApiResponse({ status: 201, description: 'Order created.' })
   @ApiResponse({ status: 400, description: 'Invalid product or request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -38,7 +45,7 @@ export class OrdersController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)                                     // ← Admin only
+  @Roles('admin')
   @ApiOperation({ summary: 'List all orders (Admin only)' })
   @ApiResponse({ status: 200, description: 'List of orders.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -49,7 +56,10 @@ export class OrdersController {
 
   @Get('my-orders')
   @ApiOperation({ summary: 'Get my orders (extracted from JWT token)' })
-  @ApiResponse({ status: 200, description: 'List of orders for logged in user.' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of orders for logged in user.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   getMyOrders(@Request() req) {
     const userId = req.user?.userId || req.user?.sub;
@@ -57,7 +67,7 @@ export class OrdersController {
   }
 
   @Get('by-user/:userId')
-  @Roles(Role.ADMIN)                                     // ← Admin only
+  @Roles('admin') // ← Admin only
   @ApiOperation({ summary: 'List orders for a specific user (Admin only)' })
   @ApiResponse({ status: 200, description: 'List of orders for the user.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -77,20 +87,19 @@ export class OrdersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update order items or shipping address (PENDING orders only)' })
+  @ApiOperation({
+    summary: 'Update order items or shipping address (PENDING orders only)',
+  })
   @ApiResponse({ status: 200, description: 'Order updated.' })
   @ApiResponse({ status: 400, description: 'Cannot update non-PENDING order.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  update(
-    @Param('id') id: string,
-    @Body() updateOrderDto: UpdateOrderDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }
 
   @Patch(':id/status')
-  @Roles(Role.ADMIN)                                     // ← Admin only
+  @Roles('admin') // ← Admin only
   @ApiOperation({ summary: 'Update order status (Admin only)' })
   @ApiResponse({ status: 200, description: 'Order status updated.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })

@@ -2,21 +2,19 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { HttpModule } from '@nestjs/axios';
-import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import * as Joi from 'joi';
+
 import { OrderDocument, OrderSchema } from './schemas/order.schema';
 import { CartDocument, CartSchema } from './schemas/cart.schema';
 import { OrdersController } from './orders.controller';
 import { CartController } from './cart.controller';
 import { OrdersService } from './orders.service';
-import { CartService } from './cart.service'; 
+import { CartService } from './cart.service';
 import { OrdersRepository } from './orders.repository';
-import { CartRepository } from './cart.repository'; 
-import { HealthModule } from '@app/common';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { CartRepository } from './cart.repository';
+import { HealthModule, AUTH_SERVICE } from '@app/common';
 import { Reflector } from '@nestjs/core';
-import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -26,17 +24,22 @@ import { RolesGuard } from './guards/roles.guard';
       validationSchema: Joi.object({
         MONGODB_URI: Joi.string().required(),
         HTTP_PORT: Joi.number().default(3003),
-        PRODUCTS_HTTP_BASEURL: Joi.string().uri().optional(),
-        JWT_SECRET: Joi.string().required(), // ← added
+        JWT_SECRET: Joi.string().required(),
       }),
     }),
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.registerAsync({                // ← added
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-      }),
-      inject: [ConfigService],
-    }),
+    ClientsModule.registerAsync([
+      {
+        name: AUTH_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: '127.0.0.1',
+            port: Number(configService.get('AUTH_PORT')),
+          },
+        }),
+        inject: [ConfigService],
+      },
+    ]),
     MongooseModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
@@ -55,13 +58,11 @@ import { RolesGuard } from './guards/roles.guard';
   ],
   controllers: [OrdersController, CartController],
   providers: [
-    OrdersService, 
-    OrdersRepository, 
+    OrdersService,
+    OrdersRepository,
     CartService,
     CartRepository,
-    JwtStrategy,
-    RolesGuard,  
-    Reflector, 
-  ], // ← added JwtStrategy
+    Reflector,
+  ],
 })
 export class OrdersModule {}

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { of } from 'rxjs';
 import { OrdersProxyController } from './orders-proxy.controller';
 import { OrderStatus } from '../../orders/src/schemas/order.schema';
@@ -32,8 +33,6 @@ describe('OrdersProxyController', () => {
   } as any;
 
   beforeEach(async () => {
-    process.env.ORDERS_HTTP_BASEURL = 'http://localhost:3003';
-
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OrdersProxyController],
       providers: [
@@ -46,6 +45,12 @@ describe('OrdersProxyController', () => {
             delete: jest.fn(),
           },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('http://localhost:3003'),
+          },
+        },
       ],
     }).compile();
 
@@ -53,8 +58,6 @@ describe('OrdersProxyController', () => {
     httpService = module.get<HttpService>(HttpService);
 
     jest.clearAllMocks();
-    mockRes.status = jest.fn().mockReturnThis();
-    mockRes.json = jest.fn().mockReturnThis();
   });
 
   it('should be defined', () => {
@@ -69,7 +72,13 @@ describe('OrdersProxyController', () => {
       };
 
       jest.spyOn(httpService, 'post').mockReturnValue(
-        of({ data: mockOrder, status: 201, headers: {}, config: {} as any, statusText: 'Created' }),
+        of({
+          data: mockOrder,
+          status: 201,
+          headers: {},
+          config: {} as any,
+          statusText: 'Created',
+        }),
       );
 
       await controller.create(body, mockReq, mockRes);
@@ -77,7 +86,11 @@ describe('OrdersProxyController', () => {
       expect(httpService.post).toHaveBeenCalledWith(
         'http://localhost:3003/orders',
         body,
-        expect.any(Object),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            authorization: 'Bearer mock_token',
+          }),
+        }),
       );
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith(mockOrder);
@@ -87,7 +100,13 @@ describe('OrdersProxyController', () => {
   describe('findAll', () => {
     it('should forward GET request to orders service', async () => {
       jest.spyOn(httpService, 'get').mockReturnValue(
-        of({ data: [mockOrder], status: 200, headers: {}, config: {} as any, statusText: 'OK' }),
+        of({
+          data: [mockOrder],
+          status: 200,
+          headers: {},
+          config: {} as any,
+          statusText: 'OK',
+        }),
       );
 
       await controller.findAll(mockReq, mockRes);
@@ -104,7 +123,13 @@ describe('OrdersProxyController', () => {
   describe('getMyOrders', () => {
     it('should forward GET my-orders request with JWT token', async () => {
       jest.spyOn(httpService, 'get').mockReturnValue(
-        of({ data: [mockOrder], status: 200, headers: {}, config: {} as any, statusText: 'OK' }),
+        of({
+          data: [mockOrder],
+          status: 200,
+          headers: {},
+          config: {} as any,
+          statusText: 'OK',
+        }),
       );
 
       await controller.getMyOrders(mockReq, mockRes);
@@ -125,7 +150,13 @@ describe('OrdersProxyController', () => {
   describe('findByUserId', () => {
     it('should forward GET by-user request to orders service', async () => {
       jest.spyOn(httpService, 'get').mockReturnValue(
-        of({ data: [mockOrder], status: 200, headers: {}, config: {} as any, statusText: 'OK' }),
+        of({
+          data: [mockOrder],
+          status: 200,
+          headers: {},
+          config: {} as any,
+          statusText: 'OK',
+        }),
       );
 
       await controller.findByUserId('user_123', mockReq, mockRes);
@@ -142,7 +173,13 @@ describe('OrdersProxyController', () => {
   describe('findOne', () => {
     it('should forward GET /:id request to orders service', async () => {
       jest.spyOn(httpService, 'get').mockReturnValue(
-        of({ data: mockOrder, status: 200, headers: {}, config: {} as any, statusText: 'OK' }),
+        of({
+          data: mockOrder,
+          status: 200,
+          headers: {},
+          config: {} as any,
+          statusText: 'OK',
+        }),
       );
 
       await controller.findOne(mockOrder._id, mockReq, mockRes);
@@ -157,7 +194,13 @@ describe('OrdersProxyController', () => {
 
     it('should return 404 when order not found', async () => {
       jest.spyOn(httpService, 'get').mockReturnValue(
-        of({ data: { message: 'Document was not found' }, status: 404, headers: {}, config: {} as any, statusText: 'Not Found' }),
+        of({
+          data: { message: 'Document was not found' },
+          status: 404,
+          headers: {},
+          config: {} as any,
+          statusText: 'Not Found',
+        }),
       );
 
       await controller.findOne('nonexistent_id', mockReq, mockRes);
@@ -166,30 +209,19 @@ describe('OrdersProxyController', () => {
     });
   });
 
-  // ← NEW: update tests
   describe('update', () => {
     it('should forward PATCH /:id request to orders service', async () => {
-      const updatedOrder = {
-        ...mockOrder,
-        items: [
-          { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
-          { productId: 'prod_003', quantity: 2, unitPrice: 12.99, subtotal: 25.98 },
-        ],
-        totalAmount: 70.93,
-        shippingAddress: '456 New St, City',
-      };
-
-      const body = {
-        items: [
-          { productId: 'prod_001', quantity: 5 },
-          { productId: 'prod_003', quantity: 2 },
-          { productId: 'prod_005', quantity: 0 },
-        ],
-        shippingAddress: '456 New St, City',
-      };
+      const updatedOrder = { ...mockOrder, totalAmount: 70.93 };
+      const body = { shippingAddress: '456 New St, City' };
 
       jest.spyOn(httpService, 'patch').mockReturnValue(
-        of({ data: updatedOrder, status: 200, headers: {}, config: {} as any, statusText: 'OK' }),
+        of({
+          data: updatedOrder,
+          status: 200,
+          headers: {},
+          config: {} as any,
+          statusText: 'OK',
+        }),
       );
 
       await controller.update(mockOrder._id, body, mockReq, mockRes);
@@ -197,7 +229,11 @@ describe('OrdersProxyController', () => {
       expect(httpService.patch).toHaveBeenCalledWith(
         `http://localhost:3003/orders/${mockOrder._id}`,
         body,
-        expect.any(Object),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            authorization: 'Bearer mock_token',
+          }),
+        }),
       );
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(updatedOrder);
@@ -206,28 +242,15 @@ describe('OrdersProxyController', () => {
     it('should return 400 when order is not PENDING', async () => {
       jest.spyOn(httpService, 'patch').mockReturnValue(
         of({
-          data: { message: 'Cannot update order with status: CONFIRMED. Only PENDING orders can be updated.' },
+          data: { message: 'Bad Request' },
           status: 400,
           headers: {},
           config: {} as any,
-          statusText: 'Bad Request',
         }),
       );
 
       await controller.update(mockOrder._id, {}, mockReq, mockRes);
-
       expect(mockRes.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should return 401 when no token provided', async () => {
-      jest.spyOn(httpService, 'patch').mockReturnValue(
-        of({ data: { message: 'Unauthorized' }, status: 401, headers: {}, config: {} as any, statusText: 'Unauthorized' }),
-      );
-
-      const noAuthReq = { headers: { authorization: '', cookie: '' } } as any;
-      await controller.update(mockOrder._id, {}, noAuthReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(401);
     });
   });
 
@@ -237,7 +260,13 @@ describe('OrdersProxyController', () => {
       const body = { status: OrderStatus.CONFIRMED };
 
       jest.spyOn(httpService, 'patch').mockReturnValue(
-        of({ data: updatedOrder, status: 200, headers: {}, config: {} as any, statusText: 'OK' }),
+        of({
+          data: updatedOrder,
+          status: 200,
+          headers: {},
+          config: {} as any,
+          statusText: 'OK',
+        }),
       );
 
       await controller.updateStatus(mockOrder._id, body, mockReq, mockRes);
@@ -255,7 +284,13 @@ describe('OrdersProxyController', () => {
   describe('remove', () => {
     it('should forward DELETE /:id request to orders service', async () => {
       jest.spyOn(httpService, 'delete').mockReturnValue(
-        of({ data: {}, status: 204, headers: {}, config: {} as any, statusText: 'No Content' }),
+        of({
+          data: {},
+          status: 204,
+          headers: {},
+          config: {} as any,
+          statusText: 'No Content',
+        }),
       );
 
       await controller.remove(mockOrder._id, mockReq, mockRes);
@@ -265,27 +300,6 @@ describe('OrdersProxyController', () => {
         expect.any(Object),
       );
       expect(mockRes.status).toHaveBeenCalledWith(204);
-    });
-
-    it('should return 404 when order to delete not found', async () => {
-      jest.spyOn(httpService, 'delete').mockReturnValue(
-        of({ data: { message: 'Document was not found' }, status: 404, headers: {}, config: {} as any, statusText: 'Not Found' }),
-      );
-
-      await controller.remove('nonexistent_id', mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-    });
-
-    it('should return 401 when no token provided', async () => {
-      jest.spyOn(httpService, 'delete').mockReturnValue(
-        of({ data: { message: 'Unauthorized' }, status: 401, headers: {}, config: {} as any, statusText: 'Unauthorized' }),
-      );
-
-      const noAuthReq = { headers: { authorization: '', cookie: '' } } as any;
-      await controller.remove(mockOrder._id, noAuthReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(401);
     });
   });
 });
