@@ -9,13 +9,18 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiProperty, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiProperty,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { CartService } from './cart.service';
 import { AddCartItemDto, UpdateCartItemDto } from './dto/cart.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { Roles, Role } from './decorators/roles.decorator';
 
 // ← DTO for checkout body
 class CheckoutDto {
@@ -86,7 +91,9 @@ export class CartController {
 
   // ← Updated: checkout now creates order and clears cart
   @Post('checkout')
-  @ApiOperation({ summary: 'Checkout — creates order from cart and clears cart' })
+  @ApiOperation({
+    summary: 'Checkout — creates order from cart and clears cart',
+  })
   @ApiResponse({ status: 201, description: 'Order created from cart.' })
   @ApiResponse({ status: 400, description: 'Cart is empty.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })

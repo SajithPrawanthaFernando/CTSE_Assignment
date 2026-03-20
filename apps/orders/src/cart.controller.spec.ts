@@ -3,6 +3,7 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { OrderStatus } from './schemas/order.schema';
 import { RolesGuard } from './guards/roles.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Role } from './decorators/roles.decorator';
 
 describe('CartController', () => {
@@ -68,14 +69,24 @@ describe('CartController', () => {
               ...mockCart,
               items: [
                 ...mockCart.items,
-                { productId: 'prod_002', quantity: 1, unitPrice: 7.49, subtotal: 7.49 },
+                {
+                  productId: 'prod_002',
+                  quantity: 1,
+                  unitPrice: 7.49,
+                  subtotal: 7.49,
+                },
               ],
               totalAmount: 25.47,
             }),
             updateItem: jest.fn().mockResolvedValue({
               ...mockCart,
               items: [
-                { productId: 'prod_001', quantity: 5, unitPrice: 8.99, subtotal: 44.95 },
+                {
+                  productId: 'prod_001',
+                  quantity: 5,
+                  unitPrice: 8.99,
+                  subtotal: 44.95,
+                },
               ],
               totalAmount: 44.95,
             }),
@@ -86,7 +97,7 @@ describe('CartController', () => {
         },
       ],
     })
-      .overrideGuard(require('./guards/jwt-auth.guard').JwtAuthGuard)
+      .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard) // ← added: bypass RolesGuard in tests
       .useValue({ canActivate: () => true })
@@ -163,7 +174,11 @@ describe('CartController', () => {
       );
       expect(result.items[0].quantity).toBe(5);
       expect(result.totalAmount).toBe(44.95);
-      expect(service.updateItem).toHaveBeenCalledWith('user_123', 'prod_001', dto);
+      expect(service.updateItem).toHaveBeenCalledWith(
+        'user_123',
+        'prod_001',
+        dto,
+      );
     });
 
     it('should call updateItem with correct params', async () => {
@@ -187,7 +202,10 @@ describe('CartController', () => {
 
   describe('removeItem', () => {
     it('should remove item from cart', async () => {
-      const result = await controller.removeItem(mockRequest as any, 'prod_001');
+      const result = await controller.removeItem(
+        mockRequest as any,
+        'prod_001',
+      );
       expect(result.items.length).toBe(0);
       expect(result.totalAmount).toBe(0);
       expect(service.removeItem).toHaveBeenCalledWith('user_123', 'prod_001');
@@ -247,10 +265,7 @@ describe('CartController', () => {
       const body = {};
       await controller.checkout(mockRequest as any, body);
 
-      expect(service.checkout).toHaveBeenCalledWith(
-        'user_123',
-        undefined,
-      );
+      expect(service.checkout).toHaveBeenCalledWith('user_123', undefined);
     });
 
     it('should return order with correct totalAmount', async () => {
@@ -266,10 +281,7 @@ describe('CartController', () => {
       const body = { shippingAddress: '123 Main St' };
       await controller.checkout(reqWithSub as any, body);
 
-      expect(service.checkout).toHaveBeenCalledWith(
-        'user_123',
-        '123 Main St',
-      );
+      expect(service.checkout).toHaveBeenCalledWith('user_123', '123 Main St');
     });
 
     it('should not require admin role', () => {
