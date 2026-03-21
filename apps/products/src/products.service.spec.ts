@@ -5,6 +5,8 @@ import { ProductsService } from './products.service';
 import { ProductsRepository } from './products.repository';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { HttpService } from '@nestjs/axios';
+import { of } from 'rxjs';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -23,6 +25,11 @@ describe('ProductsService', () => {
     rating: 4.5,
     createdAt: new Date(),
     updatedAt: new Date(),
+  };
+
+  const httpServiceMock = {
+    get: jest.fn(),
+    post: jest.fn(),
   };
 
   const mockProducts = [
@@ -57,11 +64,11 @@ describe('ProductsService', () => {
       providers: [
         ProductsService,
         { provide: ProductsRepository, useValue: productsRepositoryMock },
-        { provide: 'auth', useValue: authClientMock },
+        { provide: HttpService, useValue: httpServiceMock },
       ],
     }).compile();
 
-    service = moduleRef.get(ProductsService);
+    service = moduleRef.get<ProductsService>(ProductsService);
   });
 
   describe('create', () => {

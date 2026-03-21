@@ -19,12 +19,11 @@ import { JwtAuthGuard, Roles } from '@app/common';
 import { RolesGuard } from '@app/common/auth/roles.guard';
 
 @ApiTags('products')
-@ApiBearerAuth() // Allows you to test with JWT in Swagger
+@ApiBearerAuth()
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // ADMIN ONLY: Requires Auth AND Admin Role
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post()
@@ -59,7 +58,6 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 
-  // ADMIN ONLY
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id')

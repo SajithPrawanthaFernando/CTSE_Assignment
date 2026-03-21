@@ -27,11 +27,11 @@ import { RolesGuard } from '@app/common/auth/roles.guard';
 
 @ApiTags('orders')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @ApiOperation({
     summary: 'Create a new order (validates products via Products service)',
@@ -44,6 +44,7 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto, userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   @Roles('admin')
   @ApiOperation({ summary: 'List all orders (Admin only)' })
@@ -54,6 +55,7 @@ export class OrdersController {
     return this.ordersService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('my-orders')
   @ApiOperation({ summary: 'Get my orders (extracted from JWT token)' })
   @ApiResponse({
@@ -66,6 +68,7 @@ export class OrdersController {
     return this.ordersService.findByUserId(userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('by-user/:userId')
   @Roles('admin') // ← Admin only
   @ApiOperation({ summary: 'List orders for a specific user (Admin only)' })
@@ -77,6 +80,7 @@ export class OrdersController {
     return this.ordersService.findByUserId(userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   @ApiOperation({ summary: 'Get order by ID' })
   @ApiResponse({ status: 200, description: 'Order found.' })
@@ -86,6 +90,7 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   @ApiOperation({
     summary: 'Update order items or shipping address (PENDING orders only)',
@@ -98,6 +103,7 @@ export class OrdersController {
     return this.ordersService.update(id, updateOrderDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id/status')
   @Roles('admin') // ← Admin only
   @ApiOperation({ summary: 'Update order status (Admin only)' })
@@ -112,6 +118,7 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, updateOrderStatusDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an order' })
