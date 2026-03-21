@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Request,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiOperation,
