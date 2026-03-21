@@ -52,7 +52,7 @@ export class CartController {
   @ApiResponse({ status: 400, description: 'Invalid product.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   addItem(@Request() req, @Body() addCartItemDto: AddCartItemDto) {
-    const userId = req.user?.userId || req.user?.sub;
+    const userId = req.user?._id || req.user?.sub;
     return this.cartService.addItem(userId, addCartItemDto);
   }
 
@@ -66,7 +66,7 @@ export class CartController {
     @Param('productId') productId: string,
     @Body() updateCartItemDto: UpdateCartItemDto,
   ) {
-    const userId = req.user?.userId || req.user?.sub;
+    const userId = req.user?._id || req.user?.sub;
     return this.cartService.updateItem(userId, productId, updateCartItemDto);
   }
 
@@ -76,7 +76,7 @@ export class CartController {
   @ApiResponse({ status: 400, description: 'Item not found in cart.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   removeItem(@Request() req, @Param('productId') productId: string) {
-    const userId = req.user?.userId || req.user?.sub;
+    const userId = req.user?._id || req.user?.sub;
     return this.cartService.removeItem(userId, productId);
   }
 
@@ -89,19 +89,21 @@ export class CartController {
     return this.cartService.clearCart(userId);
   }
 
-  // ← Updated: checkout now creates order and clears cart
   @Post('checkout')
   @ApiOperation({
     summary: 'Checkout — creates order from cart and clears cart',
   })
-  @ApiResponse({ status: 201, description: 'Order created from cart.' })
-  @ApiResponse({ status: 400, description: 'Cart is empty.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  checkout(
-    @Request() req,
-    @Body() body: CheckoutDto, // ← accepts shipping address
-  ) {
-    const userId = req.user?.userId || req.user?.sub;
+  checkout(@Request() req, @Body() body: CheckoutDto) {
+    const userId = req.user?._id || req.user?.sub;
+
+    console.log(`[Controller] POST /checkout hit. UserID: ${userId}`);
+
+    if (!userId) {
+      console.error(
+        '[Controller] Checkout failed: No userId found in request. Check Auth Guard.',
+      );
+    }
+
     return this.cartService.checkout(userId, body?.shippingAddress);
   }
 }

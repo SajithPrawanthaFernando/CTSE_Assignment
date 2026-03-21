@@ -50,7 +50,6 @@ export class ProductsController {
     return this.productsService.findByIds(ids || []);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
