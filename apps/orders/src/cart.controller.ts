@@ -19,8 +19,6 @@ import {
 import { IsOptional, IsString } from 'class-validator';
 import { CartService } from './cart.service';
 import { AddCartItemDto, UpdateCartItemDto } from './dto/cart.dto';
-import { JwtAuthGuard } from '@app/common';
-import { RolesGuard } from '@app/common/auth/roles.guard';
 
 // ← DTO for checkout body
 class CheckoutDto {
