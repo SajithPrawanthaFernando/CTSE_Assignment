@@ -16,9 +16,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       envFilePath: ['.env', 'apps/products/.env'],
       validationSchema: Joi.object({
         PORT: Joi.number().default(3002),
-        MONGODB_URI: Joi.string().default(
-          'mongodb+srv://sajithprawanthafernando:mysecrettoken@weatherapi.vla2gns.mongodb.net/',
-        ),
+        MONGODB_URI: Joi.string().required(),
       }),
     }),
     ClientsModule.registerAsync([
