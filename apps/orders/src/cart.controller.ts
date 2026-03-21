@@ -32,11 +32,11 @@ class CheckoutDto {
 
 @ApiTags('cart')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('my-cart')
   @ApiOperation({ summary: 'Get my cart' })
   @ApiResponse({ status: 200, description: 'Cart retrieved.' })
@@ -46,6 +46,7 @@ export class CartController {
     return this.cartService.getCart(userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('items')
   @ApiOperation({ summary: 'Add item to cart' })
   @ApiResponse({ status: 201, description: 'Item added to cart.' })
@@ -56,6 +57,7 @@ export class CartController {
     return this.cartService.addItem(userId, addCartItemDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('items/:productId')
   @ApiOperation({ summary: 'Update item quantity in cart' })
   @ApiResponse({ status: 200, description: 'Item updated.' })
@@ -70,6 +72,7 @@ export class CartController {
     return this.cartService.updateItem(userId, productId, updateCartItemDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('items/:productId')
   @ApiOperation({ summary: 'Remove item from cart' })
   @ApiResponse({ status: 200, description: 'Item removed.' })
@@ -80,6 +83,7 @@ export class CartController {
     return this.cartService.removeItem(userId, productId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete()
   @ApiOperation({ summary: 'Clear cart' })
   @ApiResponse({ status: 200, description: 'Cart cleared.' })
@@ -89,6 +93,7 @@ export class CartController {
     return this.cartService.clearCart(userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('checkout')
   @ApiOperation({
     summary: 'Checkout — creates order from cart and clears cart',
