@@ -4,7 +4,6 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { AUTH_SERVICE } from '@app/common';
 import { Reflector } from '@nestjs/core';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
@@ -68,7 +67,7 @@ describe('ProductsController', () => {
 
         {
           provide: ConfigService,
-          useValue: { get: jest.fn((key) => 'http://localhost:3001') },
+          useValue: { get: jest.fn(() => 'http://localhost:3001') },
         },
         {
           provide: Reflector,
