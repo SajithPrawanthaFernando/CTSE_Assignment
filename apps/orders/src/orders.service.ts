@@ -45,9 +45,17 @@ export class OrdersService {
     }
   }
 
-  async create(createOrderDto: CreateOrderDto, userId: string): Promise<OrderDocument> {
+  async create(
+    createOrderDto: CreateOrderDto,
+    userId: string,
+  ): Promise<OrderDocument> {
+    console.log(
+      `[OrdersService] Creating order for user ${userId} with items:`,
+      createOrderDto.items,
+    );
     const itemsWithPrice: OrderDocument['items'] = [];
     let totalAmount = 0;
+    console.log(`[OrdersService] Fetching product info for each item...`);
 
     for (const item of createOrderDto.items) {
       const product = await this.getProductInfo(item.productId);
@@ -60,7 +68,7 @@ export class OrdersService {
         subtotal,
       });
     }
-
+    console.log(`[OrdersService] Total amount calculated: ${totalAmount}`);
     return this.ordersRepository.create({
       userId,
       items: itemsWithPrice,
@@ -93,9 +101,14 @@ export class OrdersService {
   }
 
   // ← NEW: Update order items and/or shipping address
-  async update(id: string, updateOrderDto: UpdateOrderDto): Promise<OrderDocument> {
+  async update(
+    id: string,
+    updateOrderDto: UpdateOrderDto,
+  ): Promise<OrderDocument> {
     // Step 1 — Get existing order
-    const existingOrder = await this.ordersRepository.findOne({ _id: id } as any);
+    const existingOrder = await this.ordersRepository.findOne({
+      _id: id,
+    } as any);
 
     // Step 2 — Only allow updates on PENDING orders
     if (existingOrder.status !== OrderStatus.PENDING) {
@@ -141,7 +154,10 @@ export class OrdersService {
       }
 
       // Recalculate total amount
-      totalAmount = itemsWithPrice.reduce((sum, item) => sum + item.subtotal, 0);
+      totalAmount = itemsWithPrice.reduce(
+        (sum, item) => sum + item.subtotal,
+        0,
+      );
     }
 
     // Step 4 — Save updated order

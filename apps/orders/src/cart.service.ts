@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
@@ -29,22 +26,34 @@ export class CartService {
 
   private async getProductInfo(productId: string): Promise<ProductInfo> {
     const baseUrl = this.configService.get<string>('PRODUCTS_HTTP_BASEURL');
+    console.log(
+      `[CartService] Fetching product info for ${productId} from ${baseUrl}`,
+    );
     if (!baseUrl) {
-      throw new BadRequestException(
-        'Products service URL not configured.',
-      );
+      throw new BadRequestException('Products service URL not configured.');
     }
     try {
+      console.log(`[CartService] Sending request to products service...`);
       const response = await firstValueFrom(
         this.httpService.get<ProductInfo>(`${baseUrl}/products/${productId}`, {
           timeout: 5000,
           validateStatus: (status) => status === 200,
         }),
       );
+
+      console.log(`[CartService] Product info received:`, response.data);
       return response.data;
-    } catch {
+    } catch (error) {
+      // LOG THE ACTUAL ERROR
+      console.error(`[CartService] Request Failed!`);
+      console.error(`[CartService] Status: ${(error as any).response?.status}`);
+      console.error(`[CartService] Data:`, (error as any).response?.data);
+      console.error(
+        `[CartService] Full URL attempted: ${baseUrl}/products/${productId}`,
+      );
+
       throw new BadRequestException(
-        `Product not found or unavailable: ${productId}`,
+        `Product service error: ${(error as any).message}. Check logs for details.`,
       );
     }
   }
@@ -79,13 +88,15 @@ export class CartService {
       // ← Create new cart with item
       return this.cartRepository.create({
         userId,
-        items: [{
-          productId: dto.productId,
-          quantity: dto.quantity,
-          unitPrice: product.price,
-          subtotal: product.price * dto.quantity,
-          name: product.name,
-        }],
+        items: [
+          {
+            productId: dto.productId,
+            quantity: dto.quantity,
+            unitPrice: product.price,
+            subtotal: product.price * dto.quantity,
+            name: product.name,
+          },
+        ],
         totalAmount: product.price * dto.quantity,
       } as Omit<CartDocument, '_id'>);
     }
@@ -99,7 +110,8 @@ export class CartService {
 
     if (existingItemIndex !== -1) {
       // ← Update quantity if item exists
-      const newQuantity = updatedItems[existingItemIndex].quantity + dto.quantity;
+      const newQuantity =
+        updatedItems[existingItemIndex].quantity + dto.quantity;
       updatedItems[existingItemIndex] = {
         ...updatedItems[existingItemIndex],
         quantity: newQuantity,
@@ -135,9 +147,7 @@ export class CartService {
       throw new BadRequestException('Cart not found');
     }
 
-    const itemIndex = cart.items.findIndex(
-      (i) => i.productId === productId,
-    );
+    const itemIndex = cart.items.findIndex((i) => i.productId === productId);
 
     if (itemIndex === -1) {
       throw new BadRequestException(`Item not found in cart: ${productId}`);
@@ -168,9 +178,7 @@ export class CartService {
       throw new BadRequestException('Cart not found');
     }
 
-    const updatedItems = cart.items.filter(
-      (i) => i.productId !== productId,
-    );
+    const updatedItems = cart.items.filter((i) => i.productId !== productId);
 
     const totalAmount = this.calculateTotal(updatedItems);
 
@@ -188,15 +196,23 @@ export class CartService {
     );
   }
 
-  // ← Checkout: create order from cart then clear cart
-  async checkout(userId: string, shippingAddress?: string): Promise<OrderDocument> {
+  async checkout(
+    userId: string,
+    shippingAddress?: string,
+  ): Promise<OrderDocument> {
+    console.log(`[Checkout] Starting checkout for userId: ${userId}`);
+
     // Step 1 — Get cart
     const cart = await this.cartRepository.findByUserId(userId);
     if (!cart || cart.items.length === 0) {
+      console.warn(
+        `[Checkout] Aborted: Cart is empty or not found for user ${userId}`,
+      );
       throw new BadRequestException('Cart is empty');
     }
+    console.log(`[Checkout] Cart found. Items count: ${cart.items.length}`);
 
-    // Step 2 — Build createOrderDto from cart items
+    // Step 2 — Build createOrderDto
     const createOrderDto = {
       items: cart.items.map((item) => ({
         productId: item.productId,
@@ -204,17 +220,33 @@ export class CartService {
       })),
       shippingAddress,
     };
-
-    // Step 3 — Create order via OrdersService
-    const order = await this.ordersService.create(createOrderDto, userId);
-
-    // Step 4 — Clear cart after successful order creation
-    await this.cartRepository.findOneAndUpdate(
-      { userId } as any,
-      { $set: { items: [], totalAmount: 0 } } as any,
+    console.log(
+      `[Checkout] Order DTO prepared:`,
+      JSON.stringify(createOrderDto),
     );
 
-    // Step 5 — Return created order
-    return order;
+    // Step 3 — Create order
+    try {
+      const order = await this.ordersService.create(createOrderDto, userId);
+      console.log(
+        `[Checkout] Order created successfully. OrderId: ${order._id}`,
+      );
+
+      // Step 4 — Clear cart
+      console.log(`[Checkout] Attempting to clear cart for user: ${userId}`);
+      await this.cartRepository.findOneAndUpdate(
+        { userId } as any,
+        { $set: { items: [], totalAmount: 0 } } as any,
+      );
+      console.log(`[Checkout] Cart cleared successfully.`);
+
+      return order;
+    } catch (error) {
+      console.error(
+        `[Checkout] Error during order creation or cart clearing:`,
+        (error as Error).message,
+      );
+      throw error;
+    }
   }
 }
