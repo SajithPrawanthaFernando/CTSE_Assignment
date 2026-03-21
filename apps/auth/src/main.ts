@@ -19,7 +19,7 @@ async function bootstrap() {
     transport: Transport.TCP,
     options: {
       host: '0.0.0.0',
-      port: 80,
+      port: 3001,
     },
   });
   app.use(cookieParser());
