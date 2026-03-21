@@ -32,8 +32,6 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
-  // LOGGED IN USERS: Any role can view
-  @UseGuards(JwtAuthGuard)
   @Get()
   @ApiOperation({ summary: 'List products with pagination' })
   findAll(@Query() query: QueryProductsDto) {
