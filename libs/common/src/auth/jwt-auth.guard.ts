@@ -1,48 +1,51 @@
 import {
   CanActivate,
   ExecutionContext,
-  Inject,
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { catchError, map, Observable, of, tap } from 'rxjs';
-import { AUTH_SERVICE } from '../constants/services';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   private readonly logger = new Logger(JwtAuthGuard.name);
 
-  constructor(@Inject(AUTH_SERVICE) private readonly authClient: ClientProxy) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {}
 
-  canActivate(context: ExecutionContext): Observable<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-
     const jwt =
-      request.cookies?.Authentication ||
-      request.headers?.authentication ||
-      request.headers?.authorization?.split(' ')[1];
+      request.cookies?.Authentication || request.headers?.authentication;
 
-    if (!jwt) {
-      this.logger.error('No JWT found in request headers or cookies');
-      return of(false);
-    }
+    if (!jwt) return false;
 
-    this.logger.debug(`JWT found, validating with Auth Microservice: ${jwt}`);
+    try {
+      const authBaseUrl = this.configService.get('AUTH_HTTP_BASEURL');
 
-    return this.authClient
-      .send('authenticate', {
-        Authentication: jwt,
-      })
-      .pipe(
-        tap((res) => {
-          request.user = res;
-        }),
-        map(() => true),
-        catchError((err) => {
-          this.logger.error('Auth microservice rejected the token', err);
-          return of(false);
+      if (!authBaseUrl) {
+        throw new Error(
+          'AUTH_HTTP_BASEURL is not defined in environment variables',
+        );
+      }
+
+      const { data: user } = await lastValueFrom(
+        this.httpService.get(`${authBaseUrl}/auth/authenticate`, {
+          headers: { authentication: jwt },
         }),
       );
+
+      request.user = user;
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `Auth service rejected token: ${(err as Error).message}`,
+      );
+      return false;
+    }
   }
 }
