@@ -1,4 +1,4 @@
-import { Controller, Post, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Post, Res, UseGuards } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { Response } from 'express';
 import { CurrentUser, UserDocument } from '@app/common';
@@ -22,10 +22,9 @@ export class AuthController {
     return result;
   }
 
-  @MessagePattern('authenticate')
-  async authenticate(@Payload() data: any) {
-    // data.Authentication is the key we used in the Products JwtAuthGuard
-    return this.authService.validateToken(data.Authentication);
+  @Get('authenticate')
+  async authenticate(@Headers('authentication') authHeader: string) {
+    return this.authService.validateToken(authHeader);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60 * 1000 } })

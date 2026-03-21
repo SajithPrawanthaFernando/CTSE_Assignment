@@ -1,12 +1,5 @@
-import {
-  BadRequestException,
-  Injectable,
-  Inject,
-  OnModuleInit,
-  Logger,
-} from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { AUTH_SERVICE } from '@app/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import { ProductsRepository } from './products.repository';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -15,28 +8,14 @@ import { ProductDocument } from './schemas/product.schema';
 import { FilterQuery, Types } from 'mongoose';
 
 @Injectable()
-export class ProductsService implements OnModuleInit {
+export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
   constructor(
     private readonly productsRepository: ProductsRepository,
 
-    @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy,
+    private readonly httpService: HttpService,
   ) {}
-
-  async onModuleInit() {
-    try {
-      await this.authClient.connect();
-      this.logger.log(
-        'Successfully established TCP connection to Auth Service.',
-      );
-    } catch (err) {
-      this.logger.error(
-        'Could not connect to Auth Service via TCP. Ensure it is running on the correct port.',
-      );
-      this.logger.debug(err);
-    }
-  }
 
   async create(createProductDto: CreateProductDto): Promise<ProductDocument> {
     return this.productsRepository.create({

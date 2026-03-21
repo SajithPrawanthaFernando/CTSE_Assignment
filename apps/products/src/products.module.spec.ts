@@ -5,8 +5,8 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { ProductsRepository } from './products.repository';
 import { ProductDocument } from './schemas/product.schema';
-import { AUTH_SERVICE } from '@app/common';
 import { Reflector } from '@nestjs/core';
+import { HttpService } from '@nestjs/axios';
 
 const mockProductModel = {
   find: jest.fn(),
@@ -47,17 +47,18 @@ describe('ProductsModule (unit)', () => {
               if (key === 'MONGODB_URI')
                 return 'mongodb://localhost:27017/products';
               if (key === 'PORT') return 3002;
-              if (key === 'AUTH_HOST') return 'localhost';
-              if (key === 'AUTH_PORT') return 3001;
+
+              if (key === 'AUTH_HTTP_BASEURL') return 'http://localhost:3001';
               return undefined;
             }),
           },
         },
+
         {
-          provide: AUTH_SERVICE,
+          provide: HttpService,
           useValue: {
-            send: jest.fn(),
-            emit: jest.fn(),
+            get: jest.fn(),
+            post: jest.fn(),
           },
         },
         {

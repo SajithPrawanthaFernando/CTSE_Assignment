@@ -4,8 +4,10 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { AUTH_SERVICE } from '@app/common'; // Import your constant
+import { AUTH_SERVICE } from '@app/common';
 import { Reflector } from '@nestjs/core';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 
 describe('ProductsController', () => {
   let controller: ProductsController;
@@ -58,21 +60,19 @@ describe('ProductsController', () => {
       controllers: [ProductsController],
       providers: [
         { provide: ProductsService, useValue: productsServiceMock },
-        // Fix: Mock the AUTH_SERVICE TCP Client
+
         {
-          provide: AUTH_SERVICE,
-          useValue: {
-            send: jest.fn(),
-            emit: jest.fn(),
-          },
+          provide: HttpService,
+          useValue: { get: jest.fn(), post: jest.fn() },
         },
-        // Fix: Provide Reflector (needed for RolesGuards/JwtGuards)
+
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn((key) => 'http://localhost:3001') },
+        },
         {
           provide: Reflector,
-          useValue: {
-            get: jest.fn(),
-            getAllAndOverride: jest.fn(),
-          },
+          useValue: { get: jest.fn(), getAllAndOverride: jest.fn() },
         },
       ],
     }).compile();

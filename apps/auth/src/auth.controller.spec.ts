@@ -40,17 +40,16 @@ describe('AuthController', () => {
     });
   });
 
-  it('should call validateToken and return user data for authenticate message pattern', async () => {
+  it('should call validateToken and return user data for authenticate HTTP request', async () => {
     const mockUser = { id: '123', email: 'a@b.com' };
-    const mockPayload = { Authentication: 'mock-jwt-token' };
+
+    const mockToken = 'mock-jwt-token';
 
     authServiceMock.validateToken.mockResolvedValueOnce(mockUser);
 
-    const result = await controller.authenticate(mockPayload);
+    const result = await controller.authenticate(mockToken);
 
-    expect(authServiceMock.validateToken).toHaveBeenCalledWith(
-      'mock-jwt-token',
-    );
+    expect(authServiceMock.validateToken).toHaveBeenCalledWith(mockToken);
     expect(result).toEqual(mockUser);
   });
 
