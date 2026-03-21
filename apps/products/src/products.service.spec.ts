@@ -6,7 +6,6 @@ import { ProductsRepository } from './products.repository';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { HttpService } from '@nestjs/axios';
-import { of } from 'rxjs';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -49,12 +48,6 @@ describe('ProductsService', () => {
     findByIds: jest.fn(),
     findOneAndUpdate: jest.fn(),
     findOneAndDelete: jest.fn(),
-  };
-
-  // Mock for the "auth" ClientProxy dependency
-  const authClientMock = {
-    send: jest.fn(),
-    emit: jest.fn(),
   };
 
   beforeEach(async () => {
