@@ -64,7 +64,7 @@ export class OrdersController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   getMyOrders(@Request() req) {
-    const userId = req.user?.userId || req.user?.sub;
+    const userId = req.user?._id || req.user?.sub;
     return this.ordersService.findByUserId(userId);
   }
 
