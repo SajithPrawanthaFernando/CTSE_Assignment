@@ -18,7 +18,7 @@ export class CartRepository extends AbstractRepository<CartDocument> {
     try {
       return await this.findOne({ userId } as any);
     } catch {
-      return null; // ← return null if cart not found
+      return null; //  return null if cart not found
     }
   }
 }

@@ -62,12 +62,12 @@ export class CartService {
     return items.reduce((sum, item) => sum + item.subtotal, 0);
   }
 
-  // ← Get or create cart for user
+  //  Get or create cart for user
   async getCart(userId: string): Promise<CartDocument> {
     let cart = await this.cartRepository.findByUserId(userId);
 
     if (!cart) {
-      // ← Create empty cart if not exists
+      //  Create empty cart if not exists
       cart = await this.cartRepository.create({
         userId,
         items: [],
@@ -78,14 +78,14 @@ export class CartService {
     return cart;
   }
 
-  // ← Add item to cart
+  //  Add item to cart
   async addItem(userId: string, dto: AddCartItemDto): Promise<CartDocument> {
     const product = await this.getProductInfo(dto.productId);
 
     let cart = await this.cartRepository.findByUserId(userId);
 
     if (!cart) {
-      // ← Create new cart with item
+      //  Create new cart with item
       return this.cartRepository.create({
         userId,
         items: [
@@ -101,7 +101,7 @@ export class CartService {
       } as Omit<CartDocument, '_id'>);
     }
 
-    // ← Check if item already exists
+    //  Check if item already exists
     const existingItemIndex = cart.items.findIndex(
       (i) => i.productId === dto.productId,
     );
@@ -109,7 +109,7 @@ export class CartService {
     let updatedItems = [...cart.items];
 
     if (existingItemIndex !== -1) {
-      // ← Update quantity if item exists
+      //  Update quantity if item exists
       const newQuantity =
         updatedItems[existingItemIndex].quantity + dto.quantity;
       updatedItems[existingItemIndex] = {
@@ -118,7 +118,7 @@ export class CartService {
         subtotal: product.price * newQuantity,
       };
     } else {
-      // ← Add new item
+      //  Add new item
       updatedItems.push({
         productId: dto.productId,
         quantity: dto.quantity,
@@ -136,7 +136,7 @@ export class CartService {
     );
   }
 
-  // ← Update item quantity
+  //  Update item quantity
   async updateItem(
     userId: string,
     productId: string,
@@ -171,7 +171,7 @@ export class CartService {
     );
   }
 
-  // ← Remove item from cart
+  //  Remove item from cart
   async removeItem(userId: string, productId: string): Promise<CartDocument> {
     const cart = await this.cartRepository.findByUserId(userId);
     if (!cart) {
@@ -188,7 +188,7 @@ export class CartService {
     );
   }
 
-  // ← Clear entire cart
+  //  Clear entire cart
   async clearCart(userId: string): Promise<CartDocument> {
     return this.cartRepository.findOneAndUpdate(
       { userId } as any,

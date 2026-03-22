@@ -100,7 +100,7 @@ export class OrdersService {
     );
   }
 
-  // ← NEW: Update order items and/or shipping address
+  //  NEW: Update order items and/or shipping address
   async update(
     id: string,
     updateOrderDto: UpdateOrderDto,
@@ -128,12 +128,12 @@ export class OrdersService {
         );
 
         if (updatedItem.quantity === 0) {
-          // ← Remove item if quantity is 0
+          //  Remove item if quantity is 0
           if (existingItemIndex !== -1) {
             itemsWithPrice.splice(existingItemIndex, 1);
           }
         } else if (existingItemIndex !== -1) {
-          // ← Update quantity of existing item
+          //  Update quantity of existing item
           const product = await this.getProductInfo(updatedItem.productId);
           itemsWithPrice[existingItemIndex] = {
             productId: updatedItem.productId,
@@ -142,7 +142,7 @@ export class OrdersService {
             subtotal: product.price * updatedItem.quantity,
           };
         } else {
-          // ← Add new item
+          //  Add new item
           const product = await this.getProductInfo(updatedItem.productId);
           itemsWithPrice.push({
             productId: updatedItem.productId,
@@ -175,7 +175,7 @@ export class OrdersService {
     );
   }
 
-  // ← Delete order
+  //  Delete order
   async remove(id: string): Promise<void> {
     await this.ordersRepository.deleteById(id);
   }

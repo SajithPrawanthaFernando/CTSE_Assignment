@@ -21,7 +21,7 @@ import { CartService } from './cart.service';
 import { AddCartItemDto, UpdateCartItemDto } from './dto/cart.dto';
 import { RolesGuard } from '@app/common/auth/roles.guard';
 import { JwtAuthGuard } from '@app/common';
-// ← DTO for checkout body
+//  DTO for checkout body
 class CheckoutDto {
   @ApiProperty({ example: '123 Main St, City', required: false })
   @IsOptional()

@@ -47,12 +47,12 @@ describe('CartController', () => {
     shippingAddress: '123 Main St, City',
   };
 
-  // ← Updated: includes roles
+  //  Updated: includes roles
   const mockRequest = {
     user: {
       userId: 'user_123',
       sub: 'user_123',
-      roles: ['user'], // ← added roles
+      roles: ['user'], //  added roles
     },
   };
 
@@ -98,7 +98,7 @@ describe('CartController', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(RolesGuard) // ← added: bypass RolesGuard in tests
+      .overrideGuard(RolesGuard) //  added: bypass RolesGuard in tests
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -129,7 +129,7 @@ describe('CartController', () => {
         'roles',
         CartController.prototype.getCart,
       );
-      expect(roles).toBeUndefined(); // ← accessible to all logged in users
+      expect(roles).toBeUndefined(); //  accessible to all logged in users
     });
   });
 

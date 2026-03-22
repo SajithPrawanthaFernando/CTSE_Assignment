@@ -18,7 +18,7 @@ export class OrdersRepository extends AbstractRepository<OrderDocument> {
     return this.find({ userId });
   }
 
-  // ← NEW: Delete order by ID
+  //  NEW: Delete order by ID
   async deleteById(id: string): Promise<void> {
     await this.findOneAndDelete({ _id: id } as any);
   }

@@ -13,7 +13,7 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
-  // ← userId REMOVED from body
+  //  userId REMOVED from body
 
   @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()

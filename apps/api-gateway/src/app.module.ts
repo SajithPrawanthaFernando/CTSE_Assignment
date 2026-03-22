@@ -15,7 +15,7 @@ import { ProductsProxyController } from './products-proxy.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
-// ← Lightweight gateway JWT strategy defined inline — no UsersService needed
+//  Lightweight gateway JWT strategy defined inline — no UsersService needed
 @Injectable()
 export class GatewayJwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
@@ -66,7 +66,7 @@ export class GatewayJwtStrategy extends PassportStrategy(Strategy) {
   ],
   controllers: [AuthProxyController, UsersProxyController, OrdersProxyController, CartProxyController,ProductsProxyController],
   providers: [
-    GatewayJwtStrategy, // ← use inline strategy, not auth service's JwtStrategy
+    GatewayJwtStrategy, //  use inline strategy, not auth service's JwtStrategy
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
