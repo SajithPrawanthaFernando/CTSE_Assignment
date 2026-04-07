@@ -100,6 +100,9 @@ export class CartController {
   checkout(@Request() req, @Body() body: CheckoutDto) {
     const userId = req.user?._id || req.user?.sub;
 
+    console.log(req.user);
+    
+
     console.log(`[Controller] POST /checkout hit. UserID: ${userId}`);
 
     if (!userId) {
@@ -108,6 +111,6 @@ export class CartController {
       );
     }
 
-    return this.cartService.checkout(userId, body?.shippingAddress);
+    return this.cartService.checkout(userId, body?.shippingAddress,req.user);
   }
 }
