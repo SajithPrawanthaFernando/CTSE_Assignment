@@ -24,6 +24,15 @@ describe('OrdersService', () => {
     status: OrderStatus.PENDING,
     totalAmount: 17.98,
   };
+  const mockUser = {
+    userId: 'user_123',
+    sub: 'user_123',
+    roles: ['user'],
+    firstname: 'John',
+    fullname: 'John Doe',
+    address: '123 Main St, City',
+    phone: '555-1234',
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -77,7 +86,7 @@ describe('OrdersService', () => {
         items: [{ productId: 'prod_001', quantity: 2 }],
       };
       const userId = 'user_123';
-      const result = await service.create(dto, userId);
+      const result = await service.create(dto, userId,mockUser);
       expect(result).toEqual(mockOrder);
       expect(httpService.get).toHaveBeenCalledWith(
         'http://products:3002/products/prod_001',
@@ -90,7 +99,7 @@ describe('OrdersService', () => {
       const dto: CreateOrderDto = {
         items: [{ productId: 'prod_001', quantity: 2 }], // 2 × 8.99 = 17.98
       };
-      const result = await service.create(dto, 'user_123');
+      const result = await service.create(dto, 'user_123',mockUser);
       expect(result.totalAmount).toBe(17.98);
     });
   });

@@ -199,6 +199,7 @@ export class CartService {
   async checkout(
     userId: string,
     shippingAddress?: string,
+    user?: any,
   ): Promise<OrderDocument> {
     console.log(`[Checkout] Starting checkout for userId: ${userId}`);
 
@@ -227,7 +228,7 @@ export class CartService {
 
     // Step 3 — Create order
     try {
-      const order = await this.ordersService.create(createOrderDto, userId);
+      const order = await this.ordersService.create(createOrderDto, userId, user);
       console.log(
         `[Checkout] Order created successfully. OrderId: ${order._id}`,
       );

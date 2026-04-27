@@ -7,6 +7,7 @@ import { OrdersRepository } from './orders.repository';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { lastValueFrom } from 'rxjs';
 
 export interface ProductInfo {
   id: string;
@@ -25,6 +26,7 @@ export class OrdersService {
 
   private async getProductInfo(productId: string): Promise<ProductInfo> {
     const baseUrl = this.configService.get<string>('PRODUCTS_HTTP_BASEURL');
+
     if (!baseUrl) {
       throw new BadRequestException(
         'Products service URL not configured; cannot validate products.',
@@ -48,6 +50,7 @@ export class OrdersService {
   async create(
     createOrderDto: CreateOrderDto,
     userId: string,
+    user?: any,
   ): Promise<OrderDocument> {
     console.log(
       `[OrdersService] Creating order for user ${userId} with items:`,
@@ -69,13 +72,60 @@ export class OrdersService {
       });
     }
     console.log(`[OrdersService] Total amount calculated: ${totalAmount}`);
-    return this.ordersRepository.create({
+    const newOrder = await this.ordersRepository.create({
       userId,
       items: itemsWithPrice,
       status: OrderStatus.PENDING,
       totalAmount,
       shippingAddress: createOrderDto.shippingAddress,
     } as Omit<OrderDocument, '_id'>);
+
+    const notificationPayload = {
+      email: user?.email,
+      subject: `Order Confirmation - GustoBistro`,
+      orderData: {
+        customerName: user.firstname,
+        fullname: user.fullname,
+        address: user.address,
+        phone: user.phone,
+        items: itemsWithPrice,
+        totalAmount,
+      },
+    };
+
+    try {
+      const gatewayUrl =
+        this.configService.get('NOTIFICATIONS_HTTP_BASEURL') ||
+        'http://localhost:3010';
+
+      console.log(gatewayUrl);
+
+      await lastValueFrom(
+        this.httpService.post(
+          `${gatewayUrl}/notifications/email`,
+          notificationPayload,
+        ),
+      );
+
+      await lastValueFrom(
+        this.httpService.post(`${gatewayUrl}/notifications/in-app/create`, {
+          userId: userId,
+          title: 'Order Confirmed',
+          message: `Your order for $${totalAmount.toFixed(2)} is being processed!`,
+          type: 'ORDER',
+        }),
+      );
+
+      console.log('[OrdersService] Notification request sent to Gateway');
+
+    } catch (err) {
+      console.error(
+        '[OrdersService] Failed to send notification via HTTP',
+        err,
+      );
+    }
+
+    return newOrder;
   }
 
   async findAll(): Promise<OrderDocument[]> {
