@@ -59,6 +59,11 @@ describe('CartService', () => {
     totalAmount: 17.98,
     shippingAddress: '123 Main St, City',
   };
+  const mockUser = {
+    userId: 'user_123',
+    sub: 'user_123',
+    roles: ['user'],
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -305,7 +310,7 @@ describe('CartService', () => {
     it('should create order and clear cart', async () => {
       jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(mockEmptyCart as any);
 
-      const result = await service.checkout('user_123', '123 Main St, City');
+      const result = await service.checkout('user_123', '123 Main St, City',mockUser);
 
       //  Verify order was created
       expect(ordersService.create).toHaveBeenCalledWith(
@@ -314,6 +319,7 @@ describe('CartService', () => {
           shippingAddress: '123 Main St, City',
         },
         'user_123',
+        mockUser,
       );
 
       //  Verify cart was cleared
@@ -330,7 +336,7 @@ describe('CartService', () => {
     it('should create order without shipping address', async () => {
       jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(mockEmptyCart as any);
 
-      await service.checkout('user_123');
+      await service.checkout('user_123', undefined, mockUser);
 
       expect(ordersService.create).toHaveBeenCalledWith(
         {
@@ -338,6 +344,7 @@ describe('CartService', () => {
           shippingAddress: undefined,
         },
         'user_123',
+        mockUser,
       );
     });
 

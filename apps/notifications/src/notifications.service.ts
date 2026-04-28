@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose'; // <-- ADDED
-import { Model } from 'mongoose'; // <-- ADDED
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import * as nodemailer from 'nodemailer';
 import { NotifyEmailDto } from './dto/notify-email.dto';
-import axios from 'axios';
 import {
   Notification,
   NotificationDocument,
-} from './schemas/notification.schema'; // <-- ADDED
+} from './schemas/notification.schema';
 
 @Injectable()
 export class NotificationsService {

@@ -5,7 +5,6 @@ import { getModelToken } from '@nestjs/mongoose';
 import { NotificationsService } from './notifications.service';
 import { Notification } from './schemas/notification.schema';
 import * as nodemailer from 'nodemailer';
-import axios from 'axios';
 
 // 1. Mock External Libraries (Nodemailer and Axios)
 jest.mock('nodemailer', () => ({
@@ -15,11 +14,9 @@ jest.mock('nodemailer', () => ({
 }));
 
 jest.mock('axios');
-const mockedAxios = axios as any;
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
-  let configService: ConfigService;
 
   const mockNotification = {
     _id: 'notif_123',
@@ -70,7 +67,6 @@ describe('NotificationsService', () => {
     }).compile();
 
     service = module.get<NotificationsService>(NotificationsService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {

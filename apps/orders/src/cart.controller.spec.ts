@@ -257,6 +257,7 @@ describe('CartController', () => {
       expect(service.checkout).toHaveBeenCalledWith(
         'user_123',
         '123 Main St, City',
+        mockRequest.user,
       );
     });
 
@@ -264,7 +265,7 @@ describe('CartController', () => {
       const body = {};
       await controller.checkout(mockRequest as any, body);
 
-      expect(service.checkout).toHaveBeenCalledWith('user_123', undefined);
+      expect(service.checkout).toHaveBeenCalledWith('user_123', undefined,mockRequest.user,);
     });
 
     it('should return order with correct totalAmount', async () => {
@@ -280,7 +281,7 @@ describe('CartController', () => {
       const body = { shippingAddress: '123 Main St' };
       await controller.checkout(reqWithSub as any, body);
 
-      expect(service.checkout).toHaveBeenCalledWith('user_123', '123 Main St');
+      expect(service.checkout).toHaveBeenCalledWith('user_123', '123 Main St',reqWithSub.user);
     });
 
     it('should not require admin role', () => {
