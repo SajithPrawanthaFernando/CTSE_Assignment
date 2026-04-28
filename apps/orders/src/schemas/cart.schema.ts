@@ -26,7 +26,7 @@ export const CartItemSchema = SchemaFactory.createForClass(CartItem);
 
 @Schema({ versionKey: false, timestamps: true })
 export class CartDocument extends AbstractDocument {
-  @Prop({ required: true, unique: true }) // ← one cart per user
+  @Prop({ required: true, unique: true }) //  one cart per user
   userId: string;
 
   @Prop({ type: [CartItemSchema], default: [] })

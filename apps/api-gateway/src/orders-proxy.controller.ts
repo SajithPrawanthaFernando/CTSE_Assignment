@@ -105,7 +105,7 @@ export class OrdersProxyController {
     return res.status(response.status).json(response.data);
   }
 
-  // ← NEW: Update order items and/or shipping address
+  //  NEW: Update order items and/or shipping address
   @Patch(':id')
   async update(
     @Param('id') id: string,

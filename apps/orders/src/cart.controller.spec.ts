@@ -47,12 +47,12 @@ describe('CartController', () => {
     shippingAddress: '123 Main St, City',
   };
 
-  // ← Updated: includes roles
+  //  Updated: includes roles
   const mockRequest = {
     user: {
       userId: 'user_123',
       sub: 'user_123',
-      roles: ['user'], // ← added roles
+      roles: ['user'], //  added roles
     },
   };
 
@@ -98,7 +98,7 @@ describe('CartController', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(RolesGuard) // ← added: bypass RolesGuard in tests
+      .overrideGuard(RolesGuard) //  added: bypass RolesGuard in tests
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -129,7 +129,7 @@ describe('CartController', () => {
         'roles',
         CartController.prototype.getCart,
       );
-      expect(roles).toBeUndefined(); // ← accessible to all logged in users
+      expect(roles).toBeUndefined(); //  accessible to all logged in users
     });
   });
 
@@ -257,6 +257,7 @@ describe('CartController', () => {
       expect(service.checkout).toHaveBeenCalledWith(
         'user_123',
         '123 Main St, City',
+        mockRequest.user,
       );
     });
 
@@ -264,7 +265,7 @@ describe('CartController', () => {
       const body = {};
       await controller.checkout(mockRequest as any, body);
 
-      expect(service.checkout).toHaveBeenCalledWith('user_123', undefined);
+      expect(service.checkout).toHaveBeenCalledWith('user_123', undefined,mockRequest.user,);
     });
 
     it('should return order with correct totalAmount', async () => {
@@ -280,7 +281,7 @@ describe('CartController', () => {
       const body = { shippingAddress: '123 Main St' };
       await controller.checkout(reqWithSub as any, body);
 
-      expect(service.checkout).toHaveBeenCalledWith('user_123', '123 Main St');
+      expect(service.checkout).toHaveBeenCalledWith('user_123', '123 Main St',reqWithSub.user);
     });
 
     it('should not require admin role', () => {
