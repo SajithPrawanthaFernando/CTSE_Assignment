@@ -1,4 +1,15 @@
-import { Body, Controller, Post, Get, Patch, Delete, Param, Req, Res, Logger } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Req,
+  Res,
+  Logger,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { Request, Response } from 'express';
@@ -14,7 +25,10 @@ export class NotificationsProxyController {
   ) {}
 
   private base(): string {
-    return this.config.get<string>('NOTIFICATIONS_HTTP_BASEURL') || 'http://localhost:3010';
+    return (
+      this.config.get<string>('NOTIFICATIONS_HTTP_BASEURL') ||
+      'http://localhost:3012'
+    );
   }
 
   private forwardHeaders(req: Request) {
@@ -27,11 +41,15 @@ export class NotificationsProxyController {
   }
 
   @Post('email')
-  async sendEmail(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async sendEmail(
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     try {
       const url = `${this.base()}/notifications/email`;
       this.logger.log(`Proxying email to: ${url}`);
-      
+
       const response = await lastValueFrom(
         this.http.post(url, body, {
           headers: this.forwardHeaders(req),
@@ -41,7 +59,9 @@ export class NotificationsProxyController {
       return res.status(response.status).json(response.data);
     } catch (error) {
       this.logger.error(`Notification email proxy error: ${error.message}`);
-      return res.status(502).json({ message: 'Notification service unavailable' });
+      return res
+        .status(502)
+        .json({ message: 'Notification service unavailable' });
     }
   }
 
@@ -58,12 +78,18 @@ export class NotificationsProxyController {
       return res.status(response.status).json(response.data);
     } catch (error) {
       this.logger.error(`Notification SMS proxy error: ${error.message}`);
-      return res.status(502).json({ message: 'Notification service unavailable' });
+      return res
+        .status(502)
+        .json({ message: 'Notification service unavailable' });
     }
   }
 
   @Post('in-app/create')
-  async createInAppNotification(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async createInAppNotification(
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     try {
       const url = `${this.base()}/notifications/in-app/create`;
       const response = await lastValueFrom(
@@ -75,7 +101,9 @@ export class NotificationsProxyController {
       return res.status(response.status).json(response.data);
     } catch (error) {
       this.logger.error(`In-app creation proxy error: ${error.message}`);
-      return res.status(502).json({ message: 'Notification service unavailable' });
+      return res
+        .status(502)
+        .json({ message: 'Notification service unavailable' });
     }
   }
 
@@ -87,11 +115,13 @@ export class NotificationsProxyController {
         this.http.get(url, {
           headers: this.forwardHeaders(req),
           validateStatus: () => true,
-        })
+        }),
       );
       return res.status(response.status).json(response.data);
     } catch (error) {
-      this.logger.error(`Failed to fetch notifications proxy: ${error.message}`);
+      this.logger.error(
+        `Failed to fetch notifications proxy: ${error.message}`,
+      );
       return res.status(502).json({ message: 'Notifications unavailable' });
     }
   }
@@ -101,31 +131,43 @@ export class NotificationsProxyController {
     try {
       const url = `${this.base()}/notifications/read-all`;
       const response = await lastValueFrom(
-        this.http.patch(url, {}, { 
-          headers: this.forwardHeaders(req),
-          validateStatus: () => true,
-        })
+        this.http.patch(
+          url,
+          {},
+          {
+            headers: this.forwardHeaders(req),
+            validateStatus: () => true,
+          },
+        ),
       );
       return res.status(response.status).json(response.data);
     } catch (error) {
-      this.logger.error(`Failed to update notifications proxy: ${error.message}`);
+      this.logger.error(
+        `Failed to update notifications proxy: ${error.message}`,
+      );
       return res.status(502).json({ message: 'Update failed' });
     }
   }
 
   @Delete(':id')
-  async deleteNotification(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+  async deleteNotification(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     try {
       const url = `${this.base()}/notifications/${id}`;
       const response = await lastValueFrom(
         this.http.delete(url, {
           headers: this.forwardHeaders(req),
           validateStatus: () => true,
-        })
+        }),
       );
       return res.status(response.status).json(response.data);
     } catch (error) {
-      this.logger.error(`Failed to delete notification proxy: ${error.message}`);
+      this.logger.error(
+        `Failed to delete notification proxy: ${error.message}`,
+      );
       return res.status(502).json({ message: 'Delete failed' });
     }
   }
