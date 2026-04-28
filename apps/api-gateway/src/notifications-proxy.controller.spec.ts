@@ -21,13 +21,6 @@ describe('NotificationsProxyController', () => {
     },
   } as unknown as Request;
 
-  const expectedHeaders = {
-    cookie: 'test-cookie=123',
-    authorization: 'Bearer test-token',
-    authentication: 'test-auth',
-    'content-type': 'application/json',
-  };
-
   const mockResponse = () => {
     const res: any = {};
     res.status = jest.fn().mockReturnValue(res);
