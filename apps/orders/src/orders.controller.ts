@@ -70,7 +70,7 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('by-user/:userId')
-  @Roles('admin') // ← Admin only
+  @Roles('admin') //  Admin only
   @ApiOperation({ summary: 'List orders for a specific user (Admin only)' })
   @ApiResponse({ status: 200, description: 'List of orders for the user.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -105,7 +105,7 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id/status')
-  @Roles('admin') // ← Admin only
+  @Roles('admin') //  Admin only
   @ApiOperation({ summary: 'Update order status (Admin only)' })
   @ApiResponse({ status: 200, description: 'Order status updated.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })

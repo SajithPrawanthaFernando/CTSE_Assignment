@@ -22,7 +22,7 @@ describe('OrdersController', () => {
     totalAmount: 17.98,
   };
 
-  // ← Regular user mock request
+  //  Regular user mock request
   const mockUserRequest = {
     user: {
       userId: 'user_123',
@@ -65,7 +65,7 @@ describe('OrdersController', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(RolesGuard) // ← override RolesGuard for most tests
+      .overrideGuard(RolesGuard) //  override RolesGuard for most tests
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -103,7 +103,7 @@ describe('OrdersController', () => {
     });
 
     it('should be restricted to admin role', () => {
-      // ← Verify @Roles(Role.ADMIN) decorator is applied
+      //  Verify @Roles(Role.ADMIN) decorator is applied
       const roles = Reflect.getMetadata(
         'roles',
         OrdersController.prototype.findAll,
@@ -127,12 +127,12 @@ describe('OrdersController', () => {
     });
 
     it('should not require admin role', () => {
-      // ← Verify no @Roles decorator on getMyOrders
+      //  Verify no @Roles decorator on getMyOrders
       const roles = Reflect.getMetadata(
         'roles',
         OrdersController.prototype.getMyOrders,
       );
-      expect(roles).toBeUndefined(); // ← accessible to all logged in users
+      expect(roles).toBeUndefined(); //  accessible to all logged in users
     });
   });
 
@@ -143,7 +143,7 @@ describe('OrdersController', () => {
     });
 
     it('should be restricted to admin role', () => {
-      // ← Verify @Roles(Role.ADMIN) decorator is applied
+      //  Verify @Roles(Role.ADMIN) decorator is applied
       const roles = Reflect.getMetadata(
         'roles',
         OrdersController.prototype.findByUserId,
@@ -233,7 +233,7 @@ describe('OrdersController', () => {
     });
 
     it('should be restricted to admin role', () => {
-      // ← Verify @Roles(Role.ADMIN) decorator is applied
+      //  Verify @Roles(Role.ADMIN) decorator is applied
       const roles = Reflect.getMetadata(
         'roles',
         OrdersController.prototype.updateStatus,

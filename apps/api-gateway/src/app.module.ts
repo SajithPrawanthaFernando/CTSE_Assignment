@@ -12,10 +12,11 @@ import { AuthProxyController } from './auth-proxy.controller';
 import { OrdersProxyController } from './orders-proxy.controller';
 import { CartProxyController } from './cart-proxy.controller';
 import { ProductsProxyController } from './products-proxy.controller';
+import { NotificationsProxyController } from './notifications-proxy.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
-// ← Lightweight gateway JWT strategy defined inline — no UsersService needed
+//  Lightweight gateway JWT strategy defined inline — no UsersService needed
 @Injectable()
 export class GatewayJwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
@@ -44,8 +45,12 @@ export class GatewayJwtStrategy extends PassportStrategy(Strategy) {
       envFilePath: ['apps/api-gateway/.env', '.env'],
       load: [
         () => ({
-          AUTH_HTTP_BASEURL: process.env.AUTH_HTTP_BASEURL || 'http://localhost:3001',
-          PRODUCTS_HTTP_BASEURL: process.env.PRODUCTS_HTTP_BASEURL || 'http://localhost:3002',
+          AUTH_HTTP_BASEURL:
+            process.env.AUTH_HTTP_BASEURL || 'http://localhost:3001',
+          PRODUCTS_HTTP_BASEURL:
+            process.env.PRODUCTS_HTTP_BASEURL || 'http://localhost:3002',
+          NOTIFICATIONS_HTTP_BASEURL:
+            process.env.NOTIFICATIONS_HTTP_BASEURL || 'http://localhost:3010',
           GATEWAY_HTTP_PORT: process.env.GATEWAY_HTTP_PORT || 3009,
         }),
       ],
@@ -64,9 +69,16 @@ export class GatewayJwtStrategy extends PassportStrategy(Strategy) {
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
   ],
-  controllers: [AuthProxyController, UsersProxyController, OrdersProxyController, CartProxyController,ProductsProxyController],
+  controllers: [
+    AuthProxyController,
+    UsersProxyController,
+    OrdersProxyController,
+    CartProxyController,
+    ProductsProxyController,
+    NotificationsProxyController,
+  ],
   providers: [
-    GatewayJwtStrategy, // ← use inline strategy, not auth service's JwtStrategy
+    GatewayJwtStrategy, //  use inline strategy, not auth service's JwtStrategy
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

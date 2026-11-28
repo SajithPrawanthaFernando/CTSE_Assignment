@@ -27,6 +27,10 @@ jobs:
             dockerfile: apps/products/Dockerfile
             image: quickbite-products
             appNameSecret: PRODUCTS_APP_NAME
+          - name: notifications
+            dockerfile: apps/notifications/Dockerfile
+            image: quickbite-notifications
+            appNameSecret: NOTIFICATIONS_APP_NAME
 
     steps:
       - uses: actions/checkout@v4

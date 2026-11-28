@@ -8,7 +8,7 @@ export class UpdateOrderItemDto {
   productId: string;
 
   @ApiProperty({ example: 2, minimum: 0 })
-  @Min(0) // ← 0 means remove item
+  @Min(0) //  0 means remove item
   quantity: number;
 }
 

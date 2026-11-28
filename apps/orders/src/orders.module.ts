@@ -14,6 +14,7 @@ import { OrdersRepository } from './orders.repository';
 import { CartRepository } from './cart.repository';
 import { HealthModule } from '@app/common';
 import { Reflector } from '@nestjs/core';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -45,6 +46,21 @@ import { Reflector } from '@nestjs/core';
       { name: OrderDocument.name, schema: OrderSchema },
       { name: CartDocument.name, schema: CartSchema },
     ]),
+    HttpModule.register({
+      timeout: 5000,
+      maxRedirects: 2,
+    }),
+    ClientsModule.register([
+      {
+        name: 'NOTIFICATION_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 3000,
+        },
+      },
+    ]),
+
     HealthModule,
   ],
   controllers: [OrdersController, CartController],

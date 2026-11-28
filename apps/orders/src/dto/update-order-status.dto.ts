@@ -9,7 +9,7 @@ export class UpdateOrderStatusDto {
     example: 'CONFIRMED',
     description: 'Order status (case-insensitive)',
   })
-  @Transform(({ value }) => value?.toUpperCase()) // ← converts any case to uppercase
+  @Transform(({ value }) => value?.toUpperCase()) //  converts any case to uppercase
   @IsEnum(OrderStatus, {
     message: `status must be one of the following values: ${Object.values(OrderStatus).join(', ')}`,
   })

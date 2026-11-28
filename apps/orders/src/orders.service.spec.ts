@@ -24,6 +24,15 @@ describe('OrdersService', () => {
     status: OrderStatus.PENDING,
     totalAmount: 17.98,
   };
+  const mockUser = {
+    userId: 'user_123',
+    sub: 'user_123',
+    roles: ['user'],
+    firstname: 'John',
+    fullname: 'John Doe',
+    address: '123 Main St, City',
+    phone: '555-1234',
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -77,7 +86,7 @@ describe('OrdersService', () => {
         items: [{ productId: 'prod_001', quantity: 2 }],
       };
       const userId = 'user_123';
-      const result = await service.create(dto, userId);
+      const result = await service.create(dto, userId,mockUser);
       expect(result).toEqual(mockOrder);
       expect(httpService.get).toHaveBeenCalledWith(
         'http://products:3002/products/prod_001',
@@ -90,7 +99,7 @@ describe('OrdersService', () => {
       const dto: CreateOrderDto = {
         items: [{ productId: 'prod_001', quantity: 2 }], // 2 × 8.99 = 17.98
       };
-      const result = await service.create(dto, 'user_123');
+      const result = await service.create(dto, 'user_123',mockUser);
       expect(result.totalAmount).toBe(17.98);
     });
   });
@@ -125,7 +134,7 @@ describe('OrdersService', () => {
     });
   });
 
-  // ← NEW: update tests
+  //  NEW: update tests
   describe('update', () => {
     it('should update item quantity successfully', async () => {
       const updatedOrder = {
@@ -157,7 +166,7 @@ describe('OrdersService', () => {
       jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(updatedOrder as any);
 
       const dto: UpdateOrderDto = {
-        items: [{ productId: 'prod_003', quantity: 1 }], // ← new item
+        items: [{ productId: 'prod_003', quantity: 1 }], //  new item
       };
       const result = await service.update(mockOrder._id, dto);
       expect(result.items.length).toBe(2);
@@ -167,13 +176,13 @@ describe('OrdersService', () => {
     it('should remove item when quantity is 0', async () => {
       const updatedOrder = {
         ...mockOrder,
-        items: [], // ← item removed
+        items: [], //  item removed
         totalAmount: 0,
       };
       jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(updatedOrder as any);
 
       const dto: UpdateOrderDto = {
-        items: [{ productId: 'prod_001', quantity: 0 }], // ← quantity 0 = remove
+        items: [{ productId: 'prod_001', quantity: 0 }], //  quantity 0 = remove
       };
       const result = await service.update(mockOrder._id, dto);
       expect(result.items.length).toBe(0);
@@ -196,7 +205,7 @@ describe('OrdersService', () => {
     });
 
     it('should throw BadRequestException for non-PENDING order', async () => {
-      // ← Mock a CONFIRMED order
+      //  Mock a CONFIRMED order
       jest.spyOn(repository, 'findOne').mockResolvedValue({
         ...mockOrder,
         status: OrderStatus.CONFIRMED,

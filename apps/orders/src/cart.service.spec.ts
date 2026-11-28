@@ -43,7 +43,7 @@ describe('CartService', () => {
     inStock: true,
   };
 
-  // ← Mock order returned after checkout
+  //  Mock order returned after checkout
   const mockOrder = {
     _id: '607f1f77bcf86cd799439022',
     userId: 'user_123',
@@ -58,6 +58,11 @@ describe('CartService', () => {
     status: OrderStatus.PENDING,
     totalAmount: 17.98,
     shippingAddress: '123 Main St, City',
+  };
+  const mockUser = {
+    userId: 'user_123',
+    sub: 'user_123',
+    roles: ['user'],
   };
 
   beforeEach(async () => {
@@ -89,7 +94,7 @@ describe('CartService', () => {
             ),
           },
         },
-        // ← NEW: Mock OrdersService
+        //  NEW: Mock OrdersService
         {
           provide: OrdersService,
           useValue: {
@@ -165,7 +170,7 @@ describe('CartService', () => {
       const dto = { productId: 'prod_001', quantity: 2 };
       const result = await service.addItem('user_123', dto);
 
-      expect(result.items[0].quantity).toBe(4); // ← 2 existing + 2 new
+      expect(result.items[0].quantity).toBe(4); //  2 existing + 2 new
       expect(result.totalAmount).toBe(35.96);
     });
 
@@ -300,29 +305,30 @@ describe('CartService', () => {
     });
   });
 
-  // ← NEW: Updated checkout tests
+  //  NEW: Updated checkout tests
   describe('checkout', () => {
     it('should create order and clear cart', async () => {
       jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(mockEmptyCart as any);
 
-      const result = await service.checkout('user_123', '123 Main St, City');
+      const result = await service.checkout('user_123', '123 Main St, City',mockUser);
 
-      // ← Verify order was created
+      //  Verify order was created
       expect(ordersService.create).toHaveBeenCalledWith(
         {
           items: [{ productId: 'prod_001', quantity: 2 }],
           shippingAddress: '123 Main St, City',
         },
         'user_123',
+        mockUser,
       );
 
-      // ← Verify cart was cleared
+      //  Verify cart was cleared
       expect(repository.findOneAndUpdate).toHaveBeenCalledWith(
         { userId: 'user_123' },
         { $set: { items: [], totalAmount: 0 } },
       );
 
-      // ← Verify order returned
+      //  Verify order returned
       expect(result).toEqual(mockOrder);
       expect(result.status).toBe(OrderStatus.PENDING);
     });
@@ -330,7 +336,7 @@ describe('CartService', () => {
     it('should create order without shipping address', async () => {
       jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValue(mockEmptyCart as any);
 
-      await service.checkout('user_123');
+      await service.checkout('user_123', undefined, mockUser);
 
       expect(ordersService.create).toHaveBeenCalledWith(
         {
@@ -338,6 +344,7 @@ describe('CartService', () => {
           shippingAddress: undefined,
         },
         'user_123',
+        mockUser,
       );
     });
 
@@ -372,7 +379,7 @@ describe('CartService', () => {
         service.checkout('user_123', '123 Main St'),
       ).rejects.toThrow(BadRequestException);
 
-      // ← Cart should NOT be cleared if order fails
+      //  Cart should NOT be cleared if order fails
       expect(repository.findOneAndUpdate).not.toHaveBeenCalledWith(
         { userId: 'user_123' },
         { $set: { items: [], totalAmount: 0 } },
